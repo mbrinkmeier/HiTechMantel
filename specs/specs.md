@@ -1,0 +1,3 @@
+# Spezifikationen der Komponenten
+
+
