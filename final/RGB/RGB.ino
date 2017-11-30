@@ -1,15 +1,65 @@
+/**
+ * 
+ */
 #include <Wire.h>
-
-// Id of the Slave
-#define BACK_ID 20
-#define ARM_ID 21
-#define BELT_ID 22
+#include <HiTechMantel.h>
 
 #define RED 10
 #define GREEN 9
 #define BLUE 6
 
+
 int id = BACK_ID;
+
+/** 
+ * Selftest
+ * 
+ * Cycle through all colors.
+ */
+void selftest() {
+
+  analogWrite(RED,255);
+  analogWrite(GREEN,0);
+  analogWrite(BLUE,0);
+
+  delay(500);
+  
+  analogWrite(RED,255);
+  analogWrite(GREEN,255);
+  analogWrite(BLUE,0);
+
+  delay(500);
+  
+  analogWrite(RED,0);
+  analogWrite(GREEN,255);
+  analogWrite(BLUE,0);
+
+  delay(500);
+  
+  analogWrite(RED,0);
+  analogWrite(GREEN,255);
+  analogWrite(BLUE,255);
+
+  delay(500);
+  
+  analogWrite(RED,0);
+  analogWrite(GREEN,0);
+  analogWrite(BLUE,255);
+
+  delay(500);
+  
+  analogWrite(RED,255);
+  analogWrite(GREEN,0);
+  analogWrite(BLUE,255);
+
+  delay(500);
+  
+  analogWrite(RED,0);
+  analogWrite(GREEN,0);
+  analogWrite(BLUE,0);
+}
+
+
 
 void setup() {
   // Set the pin mode for the RGB Pins
@@ -18,9 +68,9 @@ void setup() {
   pinMode(BLUE, OUTPUT);
 
   // Set all colors to zero
-  analoglWrite(RED,0);
-  analoglWrite(GREEN,0);
-  analoglWrite(BLUE,0);
+  analogWrite(RED,0);
+  analogWrite(GREEN,0);
+  analogWrite(BLUE,0);
   
   Wire.begin(id);               // join i2c bus with address #8
   Wire.onReceive(receiveEvent); // register event
@@ -28,11 +78,13 @@ void setup() {
 
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  delay(100);
 }
 
 
-// Handle the received bytes
+/* 
+ * Handle the received bytes 
+ */
 void receiveEvent(int numBytes) {
   char reg;
   char red;
@@ -41,17 +93,25 @@ void receiveEvent(int numBytes) {
 
   reg = Wire.read();
 
-  // Set the color
-  if (reg == 0) {
-     red = Wire.available() ? Wire.read() : 0;
-     green = Wire.available() ? Wire.read() : 0;
-     blue = Wire.available() ? Wire.read() : 0;
-     analogWrite(RED,red);
-     analogWrite(GREEN,green);
-     analogWrite(BLUE,blue);
+  switch (reg) {
+    case RESET_REG:
+      analogWrite(RED,0);
+      analogWrite(GREEN,0);
+      analogWrite(BLUE,0);
+      break;
+    case SELFTEST_REG:
+      selftest();
+      break;
+    case RGB_SET_REG:
+      // Set the color
+      red = Wire.available() ? Wire.read() : 0;
+      green = Wire.available() ? Wire.read() : 0;
+      blue = Wire.available() ? Wire.read() : 0;
+      analogWrite(RED,red);
+      analogWrite(GREEN,green);
+      analogWrite(BLUE,blue);
+      break;
   }
 
-  // Ignore other registers
-  
 }
 

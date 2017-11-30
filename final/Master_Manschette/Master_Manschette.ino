@@ -1,8 +1,5 @@
-// IDs of the Slaves
-#define BACK_ID 20
-#define ARM_ID 21
-#define BELT_ID 22
-#define HEART_ID 30
+#include <Wire.h>
+#include <HiTechMantel.h>
 
 
 // Send an RGB-color to the given id and register
