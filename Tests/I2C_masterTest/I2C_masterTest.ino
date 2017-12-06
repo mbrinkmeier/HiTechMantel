@@ -8,19 +8,18 @@ byte message;
 
 void setup() {
   Wire.begin();        // beginnt Übertagung
-  Serial.begin(9600);  
 }
 
 void loop() {
 
-  for(int j = 2; j <= 8; j++) {
-    send(j, i);
+//  for(int j = 2; j <= 8; j++) {
+    send(2, i);
     delay(1000);
-  }
+//  }
 
-  i = (i + 1) % 2;
+    i = i + 1;
   
-  delay(1000);
+//  delay(1000);
 }
 
 /*
@@ -43,7 +42,8 @@ void recive(byte slave, byte bytes) {
  */
 void send(int slave, byte message) {
   Wire.beginTransmission(slave); 
-  Wire.write(message);              
+  Wire.write(message);
+  Wire.write("Hallo!");     
   Wire.endTransmission();    
 }
 

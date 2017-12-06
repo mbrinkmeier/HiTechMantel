@@ -19,7 +19,19 @@ long pulseDur;
 // NexWaveform pulseForm = NexWaveform(6,2,"pulseForm");
 // NexTouch *nex_Listen_List[] = { NULL };
 
-void send(byte id, byte data[], int length) {
+byte readByteFromScreen() {
+  byte b = screenSerial.available() ? screenSerial.read() : 0;
+  delay(1);
+  return b;
+}
+
+void sendByte(byte id, byte data) {
+  Wire.beginTransmission(id);
+  Wire.write(data);
+  Wire.endTransmission();
+}
+
+void sendArray(byte id, byte data[], int length) {
   Wire.beginTransmission(id);
   Wire.write(data,length);
   Wire.endTransmission();
@@ -59,6 +71,8 @@ void measurePulse() {
   screenSerial.write(0xff);
 }
 
+
+
 void setup() {
   // nexInit();
 
@@ -77,12 +91,13 @@ void loop() {
   
   bool flag = false;
   if (screenSerial.available() ) {
-    byte start = screenSerial.read();
+    byte start = readByteFromScreen();
+    Serial.println(start);
     if ( start == START_BYTE ) {
       // Start reading a command
-      byte id = screenSerial.read();
-      byte cmd = screenSerial.read();
-      byte data = screenSerial.read();
+      byte id = readByteFromScreen();
+      byte cmd = readByteFromScreen();
+      byte data = readByteFromScreen();
 
       Serial.print("id: ");
       Serial.print(id);
@@ -96,16 +111,22 @@ void loop() {
         case ID_BACK:
         case ID_ARM:
         case ID_BELT:
-           // Extract the colors from the data byte
-           byte color[3];
-           color[0] = 255 * (data % 2);
-           data = data / 2;
-           color[1] = 255 * (data % 2);
-           data = data / 2;
-           color[2] = 255 * (data % 2);
-           // Send values
-           send(id,color,3);
+           if ( cmd == CMD_RGB_SET ) {
+             // Extract the colors from the data byte
+             byte color[4];
+             color[0] = CMD_RGB_SET;
+             color[1] = 255 * (data % 2);
+             data = data / 2;
+             color[2] = 255 * (data % 2);
+             data = data / 2;
+             color[3] = 255 * (data % 2);
+             // Send values
+             sendArray(id,color,4);
+           } else {
+             sendByte(id,cmd); 
+           }
            break;
+       
 
         case ID_PULSE:
            switch (cmd) {
@@ -128,7 +149,6 @@ void loop() {
            }
            break;
       }
-
       
     }
   }

@@ -11,7 +11,7 @@
 #define LEN 127
 
 
-// Example for NeoPixel Shield.  In this application we'd like to use it
+// Example for NeoPixel Shield.  In this application we'd like to use it0x000000
 // as a 5x8 tall matrix, with the USB port positioned at the top of the
 // Arduino.  When held that way, the first pixel is at the top right, and
 // lines are arranged in columns, progressive order.  The shield uses

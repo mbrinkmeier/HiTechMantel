@@ -1,5 +1,7 @@
 #include <Wire.h>
 
+#define ID 2
+
 int led = 7;
 
 void setup() {
@@ -7,9 +9,11 @@ void setup() {
   digitalWrite(led, HIGH);
   delay(5000);
   digitalWrite(led, LOW);
-  Wire.begin(8);                // join i2c bus with address #8
+  Wire.begin(ID);                // join i2c bus with address #8
   Wire.onReceive(receiveEvent); // register event
   Serial.begin(9600);           // start serial for output
+  delay(1000);
+  Serial.println("Receiving ... ");
 }
 
 void loop() {
@@ -23,10 +27,14 @@ void receiveEvent(int howMany) {
   if (Wire.available()) {
     int x = Wire.read();    // receive byte as an integer
     Serial.println(x);
-    if(x == 0) {
+    if(x%2 == 0) {
       digitalWrite(led, LOW);
-    } else if(x == 1) {
+    } else if(x%2 == 1) {
       digitalWrite(led, HIGH);
     }
+    while ( Wire.available() ) {
+      Serial.print((char) Wire.read());
+    }
+    Serial.println();
   }
 }

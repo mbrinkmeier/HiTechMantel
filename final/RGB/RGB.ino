@@ -1,5 +1,7 @@
 /**
+ * This sketch is the programm for the thre RGB controlling Floras.
  * 
+ * It receives the red, green and blue component to be displayed.
  */
 #include <Wire.h>
 #include <HiTechMantel.h>
@@ -8,8 +10,9 @@
 #define GREEN 9
 #define BLUE 6
 
-
-int id = BACK_ID;
+// int id = ID_BACK;
+// int id = ID_BELT;
+int id = ID_ARM;
 
 /** 
  * Selftest
@@ -62,6 +65,8 @@ void selftest() {
 
 
 void setup() {
+  Serial.begin(9600);
+
   // Set the pin mode for the RGB Pins
   pinMode(RED, OUTPUT);
   pinMode(GREEN, OUTPUT);
@@ -71,9 +76,16 @@ void setup() {
   analogWrite(RED,0);
   analogWrite(GREEN,0);
   analogWrite(BLUE,0);
-  
+
+  // Run the selftest
+  selftest();
+
+  // Start the i2c conection
   Wire.begin(id);               // join i2c bus with address #8
   Wire.onReceive(receiveEvent); // register event
+
+  Serial.print("Listening with ID ");
+  Serial.println(id);
 }
 
 
@@ -81,28 +93,30 @@ void loop() {
   delay(100);
 }
 
+byte odd = 0;
 
 /* 
  * Handle the received bytes 
  */
 void receiveEvent(int numBytes) {
-  char reg;
-  char red;
-  char green;
-  char blue;
+  byte cmd;
+  byte red;
+  byte green;
+  byte blue;
 
-  reg = Wire.read();
-
-  switch (reg) {
-    case RESET_REG:
+  cmd = Wire.read();
+  Serial.println(cmd);
+  
+  switch (cmd) {
+    case CMD_RGB_RESET:
       analogWrite(RED,0);
       analogWrite(GREEN,0);
       analogWrite(BLUE,0);
       break;
-    case SELFTEST_REG:
+    case CMD_SELFTEST:
       selftest();
       break;
-    case RGB_SET_REG:
+    case CMD_RGB_SET:
       // Set the color
       red = Wire.available() ? Wire.read() : 0;
       green = Wire.available() ? Wire.read() : 0;
@@ -110,8 +124,22 @@ void receiveEvent(int numBytes) {
       analogWrite(RED,red);
       analogWrite(GREEN,green);
       analogWrite(BLUE,blue);
+      Serial.println(red);
+      Serial.println(green);
+      Serial.println(blue);
+      break;
+   case CMD_PING:
+      Wire.onRequest(waitForPing);
       break;
   }
+}
 
+
+/**
+ * Wait for the ping request.
+ */
+void waitForPing() {
+  Wire.write("ping");
+  Wire.onRequest(NULL);
 }
 

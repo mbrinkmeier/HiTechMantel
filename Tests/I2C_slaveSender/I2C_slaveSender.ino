@@ -3,7 +3,7 @@
 int i = 0;
 
 void setup() {
-  Wire.begin(1);                // join i2c bus with address #8
+  Wire.begin(i);                // join i2c bus with address #8
   Wire.onRequest(requestEvent); // register event
 }
 
