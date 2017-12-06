@@ -7,10 +7,6 @@
 #include <HiTechMantel.h>
 
 
-// The pins for the RGB-LED
-#define RED 10
-#define GREEN 9
-#define BLUE 6
 
 // The id of the flora
 
@@ -21,22 +17,16 @@ int id = ID_BELT;
 HiTechMantel mantel = HiTechMantel();
 Adafruit_NeoPixel pixel = mantel.pixel;
 
+Adafruit_NeoPixel pixel2 = Adafruit_NeoPixel(1,10,NEO_GRBW + NEO_KHZ800);
+
 /**
  * Set the Flora up.
  */
 void setup() {
   // Start the serial connection for debugging.
   Serial.begin(9600);
-
-  // Set the pin mode for the RGB Pins
-  pinMode(RED, OUTPUT);
-  pinMode(GREEN, OUTPUT);
-  pinMode(BLUE, OUTPUT);
-
-  // Set all colors to zero
-  analogWrite(RED,0);
-  analogWrite(GREEN,0);
-  analogWrite(BLUE,0);
+  pixel2.begin();
+  
 
   // Run the selftest
   selftest();
@@ -78,23 +68,23 @@ void receiveEvent(int numBytes) {
   
   switch (cmd) {
     case CMD_RGB_RESET:
-      analogWrite(RED,0);
-      analogWrite(GREEN,0);
-      analogWrite(BLUE,0);
+      pixel2.setPixelColor(0,0,0,0);
+      pixel.setPixelColor(0,0,0,0);
+      pixel2.show();
+      pixel.show();
       break;
     case CMD_SELFTEST:
       selftest();
       break;
     case CMD_RGB_SET:
       // Set the color
-      analogWrite(RED,data[0]);
-      analogWrite(GREEN,data[1]);
-      analogWrite(BLUE,data[2]);
+      pixel2.setPixelColor(0,data[0],data[1],data[2]);
+      pixel.setPixelColor(0,data[0],data[1],data[2]);
       Serial.println(data[0]);
       Serial.println(data[1]);
       Serial.println(data[2]);
-      pixel.setPixelColor(0,data[0],data[1],data[2]);
       pixel.show();
+      pixel2.show();
       break;
    case CMD_PING:
       Wire.onRequest(waitForPing);
@@ -123,44 +113,35 @@ void waitForPing() {
  */
 void selftest() {
 
-  analogWrite(RED,255);
-  analogWrite(GREEN,0);
-  analogWrite(BLUE,0);
+  pixel2.setPixelColor(0,255,0,0);
+  pixel2.show();
 
   delay(500);
   
-  analogWrite(RED,255);
-  analogWrite(GREEN,255);
-  analogWrite(BLUE,0);
+  pixel2.setPixelColor(0,0,255,0);
+  pixel2.show();
 
   delay(500);
   
-  analogWrite(RED,0);
-  analogWrite(GREEN,255);
-  analogWrite(BLUE,0);
+  pixel2.setPixelColor(0,0,0,255);
+  pixel2.show();
 
   delay(500);
   
-  analogWrite(RED,0);
-  analogWrite(GREEN,255);
-  analogWrite(BLUE,255);
-
+  pixel2.setPixelColor(0,255,255,0);
+  pixel2.show();
   delay(500);
   
-  analogWrite(RED,0);
-  analogWrite(GREEN,0);
-  analogWrite(BLUE,255);
-
+  pixel2.setPixelColor(0,255,0,255);
+  pixel2.show();
   delay(500);
   
-  analogWrite(RED,255);
-  analogWrite(GREEN,0);
-  analogWrite(BLUE,255);
-
+  pixel2.setPixelColor(0,0,255,255);
+  pixel2.show();
   delay(500);
   
-  analogWrite(RED,0);
-  analogWrite(GREEN,0);
-  analogWrite(BLUE,0);
+  pixel2.setPixelColor(0,0,0,0);
+  pixel2.show();
+  delay(500);
 }
 

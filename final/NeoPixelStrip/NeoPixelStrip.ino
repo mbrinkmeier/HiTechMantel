@@ -26,11 +26,18 @@ int frameCount;   // Counts the current frame
 int colRed;
 int colGreen;
 int colBlue;
-int lastFrame;
+unsigned long lastFrame;
 
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(LEN, PIN,  NEO_GRB           + NEO_KHZ800);
+HiTechMantel mantel = HiTechMantel();
+Adafruit_NeoPixel pixel = mantel.pixel;
 
- 
+// The strip
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(LEN, PIN,  NEO_GRB + NEO_KHZ800);
+
+
+/**
+ * Initialize serial connections, I2C connection, pixel and strip.
+ */
 void setup() {
   debugSerial.begin(9600);
 
@@ -47,11 +54,15 @@ void setup() {
   debugSerial.print("Running selftest ... ");
   selftest();
   debugSerial.println("finished");
-
-  initAniRainbow();
 }
 
-
+/**
+ * The main loop
+ * 
+ * Checks if the time since last frame is longer than  frameDelay.
+ * If this is the case, the frameCount is increased and the new
+ * frame is computed and displayed.
+ */
 void loop() {
   long time = millis();
   if ( (time - lastFrame > frameDelay) && (frameDelay > 0) ) {
@@ -60,6 +71,7 @@ void loop() {
         doAniRainbow(frameCount);
         break;
     }
+    lastFrame = millis();
     frameCount = ( frameCount + 1 ) % frameNumber; 
     strip.show();
     delay(SHOW_DELAY);
@@ -67,36 +79,31 @@ void loop() {
 }
 
 
-
+/**
+ * Handle incoming I2C Transmissions
+ * 
+ * Each transmission consists of
+ * <cmd> <dlen> <data[0]> ... <data[dlen-1]>
+ */
 void handleMsg(int numBytes) {
-  byte cmd = Wire.available() ? Wire.read(): 0;
-  byte count = Wire.available() ? Wire.read(): 0;
-  byte red;
-  byte green;
-  byte blue;
+  byte cmd = mantel.readFromWire();
+  byte dlen = mantel.readFromWire();
+  byte data[255];
+
+  mantel.readData(dlen,data);
   
   debugSerial.print("Received cmd: ");
   debugSerial.print(cmd);
-  debugSerial.print("and count: ");
-  debugSerial.println(count);
-
+  debugSerial.print("and dlen: ");
+  debugSerial.println(dlen);
+  mantel.debugData(data,dlen);
   
   switch (cmd) {
     case CMD_STRIP_RESET:
       initAniColor(0,0,0);
       break;
     case CMD_STRIP_COLOR:
-      // Read the next three bytes
-      red = Wire.available() ? Wire.read() : 0;
-      green = Wire.available() ? Wire.read() : 0;
-      blue = Wire.available() ? Wire.read() : 0;
-      debugSerial.print("Setting color ");
-      debugSerial.print(red);
-      debugSerial.print(" ");
-      debugSerial.print(green);
-      debugSerial.print(" ");
-      debugSerial.println(blue);
-      initAniColor(red,green,blue);
+      initAniColor(data[0],data[1],data[2]);
       break;
     case CMD_STRIP_RAINBOW:
       initAniRainbow();
@@ -107,7 +114,9 @@ void handleMsg(int numBytes) {
 }
 
 
-
+/**
+ * The selftest
+ */
 void selftest() {
   initAniColor(0,255,0);
   
@@ -124,13 +133,22 @@ void selftest() {
   delay(10);
 }
 
-
+/**
+ * Initialize constant color
+ */
 void initAniColor(int red, int green, int blue) {
   frameAni = ANI_COLOR;
   frameCount = 1;
   frameNumber = 1;
   frameDelay = 0;  // No animation
   lastFrame = millis();
+
+  debugSerial.print("Setting color ");
+  debugSerial.print(red);
+  debugSerial.print(" ");
+  debugSerial.print(green);
+  debugSerial.print(" ");
+  debugSerial.println(blue);
 
   for (int i = 0; i < LEN; i=i+1) {
     strip.setPixelColor(i,red,green,blue);
@@ -139,15 +157,19 @@ void initAniColor(int red, int green, int blue) {
   delay(SHOW_DELAY);
 }
 
+/**
+ * Initializte Rainbow animation
+ */
 void initAniRainbow() {
   frameAni = ANI_RAINBOW;
   frameCount = 0;
   frameNumber = LEN;
   frameDelay = 100;
-  lastFrame = millis();
 }
 
-
+/**
+ * Compute the rainbow frame
+ */
 void doAniRainbow(int frame) {
   int interval;
   int ilen = LEN/6;

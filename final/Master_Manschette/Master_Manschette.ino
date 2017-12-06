@@ -1,7 +1,7 @@
 #include <Wire.h>
 #include <HiTechMantel.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_NeoPixel.h>
+// #include <Adafruit_GFX.h>
+// #include <Adafruit_NeoPixel.h>
 
 #define screenSerial Serial1
 #define debugSerial Serial
@@ -10,13 +10,21 @@
 #define PULSE_INTERVAL 500
 #define PULSE_AVG_COUNT 10
 
+HiTechMantel mantel = HiTechMantel();
+Adafruit_NeoPixel pixel = mantel.pixel;
 
-Adafruit_NeoPixel pixel = Adafruit_NeoPixel(1,8,NEO_GRBW + NEO_KHZ800);
+// Adafruit_NeoPixel pixel = Adafruit_NeoPixel(1,8,NEO_GRBW + NEO_KHZ800);
 
 byte readByteFromScreen() {
   byte b = screenSerial.available() ? screenSerial.read() : 0;
   delay(1);
   return b;
+}
+
+void readBytesFromScreen(int len, byte buf[]) {
+  for (int i = 0; i < len; i++) {
+    buf[i] = readByteFromScreen();
+  }
 }
 
 void sendByte(byte id, byte data) {
@@ -33,12 +41,14 @@ void sendArray(byte id, byte data[], int length) {
 }
 
 
-
+/**
+ * Setup as I2C master
+ */
 void setup() {
   debugSerial.begin(9600);
   screenSerial.begin(9600);
   
-  pixel.begin();
+  // pixel.begin();
   // Do a selftest
   pixel.setPixelColor(0,255,0,0);
   pixel.show();
@@ -62,78 +72,59 @@ void setup() {
 }
 
 
+/**
+ * Recevie messages fromthe screen
+ */
 void loop() {
   bool flag = false;
-
+  byte data[255];
+  
+   // Check if data was received from screen
   if (screenSerial.available() ) {
-    digitalWrite(7,HIGH);
     byte start = readByteFromScreen();
+
+    // If it was a START_BYTE start processing
     if ( start == START_BYTE ) {
-      // Start reading a command
+      
+      // Start reading TARGET_ID, CMD_ID and DLEN
       byte id = readByteFromScreen();
       byte cmd = readByteFromScreen();
-      byte data = readByteFromScreen();
+      byte dlen = readByteFromScreen();
 
+      readBytesFromScreen(dlen,data);
+      
+      // debug Output
       debugSerial.print("id: ");
       debugSerial.print(id);
       debugSerial.print(" cmd: ");
       debugSerial.print(cmd);
-      debugSerial.print(" data: ");
-      debugSerial.println(data);
-      // Now treat the commands, depending on their data length
+      debugSerial.print(" dlen: ");
+      debugSerial.print(dlen);
+      mantel.debugData(data,dlen);
+      debugSerial.println();
 
-      switch (id) {
-        case ID_BACK:
-        case ID_ARM:
-        case ID_BELT:
-           if ( cmd == CMD_RGB_SET ) {
-             // Extract the colors from the data byte
-             byte color[4];
-             color[0] = CMD_RGB_SET;
-             color[1] = 255 * (data % 2);
-             data = data / 2;
-             color[2] = 255 * (data % 2);
-             data = data / 2;
-             color[3] = 255 * (data % 2);
-             // Set Pixel
-             debugSerial.print("RGB set id ");
-             debugSerial.print(id);
-             debugSerial.print(" ");
-             debugSerial.print(color[1]);
-             debugSerial.print(" ");
-             debugSerial.print(color[2]);
-             debugSerial.print(" ");
-             debugSerial.println(color[3]);
-             pixel.setPixelColor(0,color[1],color[2],color[3]);
-             pixel.show();
-             // Send values
-             sendArray(id,color,4);
-           } else {
-             sendByte(id,cmd); 
-           }
-           break;
-        default:
-           // Simply send the next <data> bytes to the corresponding id
+
+      if ( id == 0 ) {
+        // If its for the master, do it yourself
+        debugSerial.println("Processing commd myself");
+      } else {
+        // Otherwise send cmd dlen data to id
            debugSerial.println("Relaying data:");
            Wire.beginTransmission(id);
            Wire.write(cmd);
-           Wire.write(data);
+           Wire.write(dlen);
            debugSerial.print(cmd);
            debugSerial.print(" ");
-           debugSerial.print(data);
-           byte count = data;
-           while ((count > 0) && (screenSerial.available())) {
-             byte d = readByteFromScreen();
+           debugSerial.print(dlen);
+           for (int i = 0; i < dlen; i++) {
+             Wire.write(data[i]);             
              debugSerial.print(" ");
-             debugSerial.print(d);
-             Wire.write(d); 
+             debugSerial.print(data[i]);
            }
            debugSerial.println();
            Wire.endTransmission();
       }
     }
-  } else {
-    digitalWrite(7,LOW);
   }
   delay(2);
 }

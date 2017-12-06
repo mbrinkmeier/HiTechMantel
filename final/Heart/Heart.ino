@@ -14,180 +14,235 @@
  #define PSTR // Make Arduino Due happy
 #endif
 
-#define DATA_PIN 10
-#define SHOW_DELAY 100
+#define debugSerial Serial
+
+#define DATA_PIN 9
+#define SHOW_DELAY 10
 
 #define ANI_NONE  0
-#define ANI_TEXT  1
-#define ANI_HEART 2
+#define ANI_COLOR  1
+#define ANI_TEXT  2
+#define ANI_HEART 3
 
-int animation;  // The tpe of animation to be displayed
-int frame;      // The number of the current frame
-int noFrames;   // The number of frames in one cycle
-int rate;       // The number of millisecods between frames.
-String text;
-char red;
-char green;
-char blue;
+int frameAni;     // The id of the animation
+int frameDelay;   // The time between two frames
+int frameNumber;  // The number of frames for the current animation
+int frameCount;   // Counts the current frame
+int colRed = 0;
+int colGreen = 0;
+int colBlue = 100;
+unsigned long lastFrame;
+String aniText;
 
+HiTechMantel mantel = HiTechMantel();
+Adafruit_NeoPixel pixel = mantel.pixel;
 
 // Define the matrix
 Adafruit_NeoMatrix matrix = Adafruit_NeoMatrix(8, 8, DATA_PIN,
-  NEO_MATRIX_BOTTOM  + NEO_MATRIX_LEFT +
-  NEO_MATRIX_ROWS + NEO_MATRIX_ZIGZAG,
+  NEO_MATRIX_TOP  + NEO_MATRIX_RIGHT +
+  NEO_MATRIX_COLUMNS + NEO_MATRIX_PROGRESSIVE,
   NEO_RGBW            + NEO_KHZ800);
 
 char heart_rate = 0;
 unsigned long last_tick = 0;
 
 
-/*
- * Reset
+/**
+ * Initialize serial connections, I2C connection, pixel and strip.
  */
-void reset() {
-  matrix.clear();
-  matrix.show();
-  delay(SHOW_DELAY);  
+void setup() {
+  debugSerial.begin(9600);
+
+  Wire.begin(ID_MATRIX);        // join i2c bus with ID_MATRIX
+  Wire.onReceive(handleMsg); // register event
+
+  delay(100);
+  matrix.begin();
+  matrix.fillScreen(matrix.Color(0,0,0));
+
+  debugSerial.print("NeoPixelMatrix listening as ID ");
+  debugSerial.println(ID_MATRIX);
+  
+
+  debugSerial.print("Running selftest ... ");
+  // selftest();
+  debugSerial.println("finished");
+
+  frameAni = ANI_TEXT;
+  frameDelay = 200; // Compute delay; 255 should be 25 frames/sec; 0 shold be a second
+  frameNumber = 12 * 6;
+  frameCount = 0;
+  aniText = "Willkommen!";
+
 }
 
 
-/* 
- * Selftest 
+/**
+ * The main loop
+ * 
+ * Checks if the time since last frame is longer than  frameDelay.
+ * If this is the case, the frameCount is increased and the new
+ * frame is computed and displayed.
  */
-void selftest() {
-  // Do a little self test
-  for (int x=0; x <8; x=x+1) {
-    for (int y = 0; y <8; y=y+1) {
-      matrix.drawPixel(x,y,0x00ff00);
-      matrix.show();
-      delay(SHOW_DELAY);  
-      matrix.drawPixel(x,y,0x000000);
-      matrix.show();
-      delay(SHOW_DELAY);  
+void loop() {
+  long time = millis();
+  if ( (time - lastFrame > frameDelay) && (frameDelay > 0) ) {
+    switch ( frameAni ) {
+      case ANI_TEXT:
+        doAniText(frameCount);
+        break;
+      case ANI_HEART:
+        break;
     }
+    lastFrame= millis();
+    frameCount = ( frameCount + 1 ) % frameNumber; 
+    matrix.show();
+    delay(SHOW_DELAY);
   }
 }
 
 
-/* 
- * Fill the matrix with the given color 
+/**
+ * Handle incoming I2C Transmissions
+ * 
+ * Each transmission consists of
+ * <cmd> <dlen> <data[0]> ... <data[dlen-1]>
  */
-void showColor(char red, char green, char blue) {
-  animation = ANI_NONE;
-  rate = 100;
-  frame = 0;
-  noFrames = 1;
+void handleMsg(int numBytes) {
+  byte cmd = mantel.readFromWire();
+  byte dlen = mantel.readFromWire();
+  byte data[255];
+
+  mantel.readData(dlen,data);
+    
+  debugSerial.print("Received cmd: ");
+  debugSerial.print(cmd);
+  debugSerial.print("and dlen: ");
+  debugSerial.println(dlen);
+  mantel.debugData(data,dlen);
+  debugSerial.println();
   
+  switch (cmd) {
+    case CMD_MATRIX_RESET:
+      initAniColor(0,0,0);
+      break;
+    case CMD_MATRIX_COLOR:
+      initAniColor(data[0],data[1],data[2]);
+      break;
+    case CMD_MATRIX_TEXT:
+      initAniText(data,dlen);
+      break;
+    case CMD_MATRIX_SPEED:
+      setSpeed(data[0]);
+      break;
+      
+  }
+  // empty buffer
+  while (Wire.available()) Wire.read();
+}
+
+
+
+/* 
+ * The selftest 
+ */
+void selftest() {
+  // Do a little self test
+  for (int row = 0; row < 8; row++) {
+    for (int col = 0; col < 8; col++) {
+      Serial.print(row);
+      Serial.print(" ");
+      Serial.println(col);
+      matrix.drawPixel(row,col,matrix.Color(255,0,0));
+      matrix.show();
+      delay(10);
+      matrix.drawPixel(row,col,matrix.Color(0,255,0));
+      matrix.show();
+      delay(10);
+      matrix.drawPixel(row,col,matrix.Color(0,0,255));
+      matrix.show();
+      delay(10);
+      matrix.drawPixel(row,col,matrix.Color(0,0,0));
+    }
+  }
+  matrix.show();
+}
+
+
+/**
+ * Initialize constant color
+ */
+void initAniColor(int red, int green, int blue) {
+  frameAni = ANI_COLOR;
+  frameCount = 1;
+  frameNumber = 1;
+  frameDelay = 0;  // No animation
+  lastFrame = millis();
+
+  debugSerial.print("Setting color ");
+  debugSerial.print(red);
+  debugSerial.print(" ");
+  debugSerial.print(green);
+  debugSerial.print(" ");
+  debugSerial.println(blue);
+
+
   matrix.fillScreen(matrix.Color(red,green,blue));
   matrix.show();
   delay(SHOW_DELAY);
 }
 
 
-/* 
- * Scroll a text 
+/**
+ * Initialize scrolling text
+ * 
+ * Th first byte contains the speed
+ * The next three bytes of data contain the color.
+ * The remaining dlen-4 bytes contain the text.
  */
-void scrollText() {
-  matrix.clear();
-  matrix.setTextWrap(true);
-  matrix.setTextSize(1);
-  matrix.setRotation(0);
-  int8_t x = 7 + frame;
-  matrix.clear();
-  matrix.setCursor(x,0);
-  matrix.setTextColor(matrix.Color(red,green,blue));
-  matrix.print(text);
-  matrix.show();
-}
-
-
-/*
- * Shows a heart beat
- */
-void heartBeat() {
-  matrix.fillScreen(matrix.Color(255-frame*25,0,0));
-  matrix.show();
-  delay(SHOW_DELAY);  
-}
-
-
-/* 
- * Handle the received bytes 
- */
-void receiveEvent(int numBytes) {
-  char reg;
-
-  reg = Wire.read();
-
-  // Clear the screen
-  switch (reg) {
-    case RESET_REG:
-      break;
-      
-    case SELFTEST_REG:
-      selftest();
-      break;
-      
-    case HRT_COL_REG :
-      text = String();
-      red = Wire.available() ? Wire.read() : 0;
-      green = Wire.available() ? Wire.read() : 0;
-      blue = Wire.available() ? Wire.read() : 0;
-      showColor(red,green,blue);
-      break;
-      
-    case HRT_TXT_REG :
-      red = Wire.available() ? Wire.read() : 0;
-      green = Wire.available() ? Wire.read() : 0;
-      blue = Wire.available() ? Wire.read() : 0;
-      while ( Wire.available() ) {
-        char c = Wire.read();
-        text = text + c;
-      }
-      noFrames = text.length()*8;
-      frame = 0;
-      rate = 100;
-      break;
-
-
-    case HRT_HRT_REG :
-      char rateHi = Wire.available() ? Wire.read() : 0;
-      char rateLo = Wire.available() ? Wire.read() : 0;
-      rate = (rateHi * 256 + rateLo)/10;
-      frame = 0;
-      noFrames = 10;
-      break;
+void initAniText(byte data[], int dlen) {
+  frameAni = ANI_TEXT;
+  frameDelay = ( 500 - 9 * data[0]/5); // Compute delay; 255 should be 25 frames/sec; 0 shold be a second
+  frameNumber = (dlen-3) * 8;
+  frameCount = 0;
+  aniText = "";
+  for ( int i = 0; i < dlen-4; i++) {
+    aniText = aniText + (char) data[i+4];
   }
-  // Ignore other registers
-}
-
-
-// Initialize I2C and the matrix
-void setup() {
-  Wire.begin(HEART_ID);         // join i2c bus with address #8
-  Wire.onReceive(receiveEvent); // register event
-
-  // Set the matrix up
-  matrix.begin();
-  matrix.fillScreen(matrix.Color(0,0,0));
+  colRed = data[1];
+  colGreen = data[2];
+  colBlue = data[3];
   
+  debugSerial.print("speed: ");
+  debugSerial.print(data[0]);
+  debugSerial.print(" red: ");
+  debugSerial.print(data[1]);
+  debugSerial.print(" green: ");
+  debugSerial.print(data[2]);
+  debugSerial.print(" blue: ");
+  debugSerial.print(data[4]);
+  debugSerial.print(" text: ");
+  debugSerial.println(aniText);
+}
+
+/**
+ * Compute the next frame for scrolling text
+ */
+void doAniText(int frame) {
+  int cursor = 10-frame;
+  matrix.fillScreen(0);
+  matrix.setTextColor(matrix.Color(colRed,colGreen,colBlue));
+  matrix.setTextWrap(false);
+  matrix.setCursor(6-frameCount,0);
+  matrix.print(aniText);
 }
 
 
-void loop() {
-  // Show the next frame
-  switch ( animation ) {
+void setSpeed(byte speed) {
+  switch (frameAni) {
     case ANI_TEXT:
-      scrollText();
-      break;
-    case ANI_HEART:
-      heartBeat();
-      break;
-    case ANI_NONE:
+      frameDelay = ( 500 - 9 * speed/5);
       break;
   }
-  // Step forward and wait
-  frame = (frame + 1) % noFrames;
-  delay(rate);
 }
 
