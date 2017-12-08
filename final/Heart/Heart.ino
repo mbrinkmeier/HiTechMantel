@@ -237,7 +237,9 @@ void doAniText(int frame) {
   matrix.print(aniText);
 }
 
-
+/**
+ * Set the animation speed
+ */
 void setSpeed(byte speed) {
   switch (frameAni) {
     case ANI_TEXT:

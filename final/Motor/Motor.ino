@@ -88,6 +88,8 @@ void receiveEvent(int numBytes) {
       Wire.onRequest(waitForPing);
       break;
   }
+  mantel.emptyWire();
+  
 }
 
 

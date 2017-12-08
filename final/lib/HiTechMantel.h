@@ -23,6 +23,7 @@
 #define CMD_STRIP_COLOR 1
 #define CMD_STRIP_RAINBOW 2
 #define CMD_STRIP_RUNNING 3
+#define CMD_STRIP_SPEED 10
 
 // NeoPixel Matrix
 #define ID_MATRIX 5
@@ -41,6 +42,12 @@
 #define CMD_MOTOR_UP 1
 #define CMD_MOTOR_DOWN 2
 
+// PIR Movement detector
+#define ID_PIR_FRONT 7
+#define ID_PIR_BACK 8
+
+#define CMD_PIR_RESET 0
+#define CMD_PIR_SET 2
 
 // PULSE
 #define ID_PULSE 30
@@ -70,6 +77,7 @@ class HiTechMantel {
     HiTechMantel();
     byte readFromWire();
     void readData(int len, byte buf[]);
+    void emptyWire();
 
     // byte rainbowRed(int pos, int intervalLength);
     // byte rainbowGreen(int pos, int intervalLength);

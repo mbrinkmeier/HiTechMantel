@@ -11,13 +11,69 @@
 #include <Wire.h>
 #include <HiTechMantel.h>
 
-#define PIR 10
+#define PIR_PIN 10
 
-int id = PIR_FRONT_ID;
+// int id = ID_PIR_FRONT;
+int id = ID_PIR_BACK;
 
-int interval;
-long lastTick;
-char detected;
+unsigned long interval;
+unsigned long lastTick;
+byte detected;
+
+HiTechMantel mantel = HiTechMantel();
+
+Adafruit_NeoPixel pixel = mantel.pixel;
+
+void setup() {
+  // Set the pin mode for the PIR Pin
+  pinMode(PIR_PIN, INPUT);
+  interval = 300000; // Monitoring interval of 5 min
+  pixel.begin();
+  pixel.setPixelColor(0,0,0,0);
+  pixel.show();
+    
+  Wire.begin(id);               // join i2c bus with address #8
+  Wire.onRequest(requestEvent); // register event
+  Wire.onReceive(receiveEvent); // register event
+
+  selftest();
+  
+  Serial.begin(9600);
+
+  Serial.print("Listening as ID ");
+  Serial.println(id);
+  Serial.flush();
+
+}
+
+
+/*
+ * Check the sensor and store a received signal.
+ * 
+ * interval == 0 means no measurmente
+ */
+void loop() {
+  if ( interval > 0 ) {
+    long curTick = millis();
+    if ( curTick - lastTick >= interval ) {
+      // If Interval is over
+      detected = 0;
+      lastTick = curTick;
+      pixel.setPixelColor(0,0,0,0);
+      pixel.show();
+    }
+  }
+
+  int value = digitalRead(PIR_PIN);
+  digitalWrite(7,value);
+  
+  detected = detected || ( value == HIGH);
+  if ( detected ) {
+      pixel.setPixelColor(0,255,0,0);
+      pixel.show();    
+  }
+  delay(10);
+}
 
 /* 
  * Send the detected signal and reset. 
@@ -29,54 +85,60 @@ void requestEvent() {
   lastTick = millis();
 }
 
+
 /*
  * Set the interval, if a message is received.
  */
 void receiveEvent() {
-  char reg;
-  char intHi;
-  char intLo;
+  byte cmd;   // The command id
+  byte dlen;  // The data length
+  byte data[255];   // The data bytes
 
-  reg = Wire.read();
+  cmd = mantel.readFromWire();
+  dlen = mantel.readFromWire();
+  mantel.readData(dlen,data);
 
-  switch (reg) {
-    case RESET_REG:
-      interval = 0;
+  Serial.print("Received cmd: ");
+  Serial.print(cmd);
+  Serial.print(" dlen: ");
+  Serial.println(dlen);
+  mantel.debugData(data,dlen);
+  Serial.flush();
+
+
+  switch (cmd) {
+    case CMD_PIR_RESET:
+      interval = 300000;
       detected = 0;
       break;
-    case SELFTEST_REG:
-      break;
-    case PIR_SET_REG:
-      intHi = Wire.available() ? Wire.read() : 0;
-      intLo = Wire.available() ? Wire.read() : 0;
-      interval = intHi * 256 + intLo;
-      lastTick = millis();
+    case CMD_PIR_SET:
+      // read the first two bytes as intervall
+      byte lo = dlen > 0 ? data[0] : 0;
+      byte hi = dlen > 1 ? data[1] : 0;
+      int sec = 256 * hi + lo;
+      interval = 1000l*sec;
+      Serial.print("Interval set to ");
+      Serial.println(interval);
+      Serial.flush();
       break;
   }
+  mantel.emptyWire();
 }
 
-
-void setup() {
-  // Set the pin mode for the PIR Pin
-  pinMode(PIR, INPUT);
-  
-  Wire.begin(id);               // join i2c bus with address #8
-  Wire.onRequest(requestEvent); // register event
-  Wire.onReceive(receiveEvent); // register event
-}
-
-/*
- * Check the sensor and store a received signal.
+/**
+ * A simple selftest
  */
-void loop() {
-  if ( interval > 0 ) {
-    long curTick = millis();
-    if ( curTick - lastTick >= interval ) {
-      detected = 0;
-      lastTick = curTick;
-    }
-  }
-
-  detected = detected | (char) digitalRead(PIR);
-  delay(100);
+void selftest() {
+  pixel.setPixelColor(0,255,0,0);
+  pixel.show();
+  delay(500);
+  pixel.setPixelColor(0,0,255,0);
+  pixel.show();
+  delay(500);
+  pixel.setPixelColor(0,0,0,255);
+  pixel.show();
+  delay(500);
+  pixel.setPixelColor(0,0,0,0);
+  pixel.show();
 }
+

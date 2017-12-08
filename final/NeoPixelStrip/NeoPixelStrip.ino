@@ -97,6 +97,7 @@ void handleMsg(int numBytes) {
   debugSerial.print("and dlen: ");
   debugSerial.println(dlen);
   mantel.debugData(data,dlen);
+  debugSerial.println();
   
   switch (cmd) {
     case CMD_STRIP_RESET:
@@ -108,6 +109,8 @@ void handleMsg(int numBytes) {
     case CMD_STRIP_RAINBOW:
       initAniRainbow();
       break;
+    case CMD_STRIP_SPEED:
+      setSpeed(data[0]);
   }
   // empty buffer
   while (Wire.available()) Wire.read();
@@ -123,14 +126,14 @@ void selftest() {
   for (int i = 0; i < LEN; i=i+1) {
     strip.setPixelColor(i,255,0,0);
     strip.show();
-    delay(10);
+    delay(5);
     strip.setPixelColor(i,0,0,255);
     strip.show();
-    delay(10);
+    delay(5);
     strip.setPixelColor(i,0,0,0);
     strip.show();
   }
-  delay(10);
+  delay(5);
 }
 
 /**
@@ -171,52 +174,64 @@ void initAniRainbow() {
  * Compute the rainbow frame
  */
 void doAniRainbow(int frame) {
+  int ilen = 21;
   int interval;
-  int ilen = LEN/6;
-  byte red;
-  byte green;
-  byte blue;
+  int red;
+  int green;
+  int blue;
   
   for ( int pos = 0; pos < LEN; pos = pos+1 ) {
-    int lpos = pos + frame;
-    interval = lpos/ilen;
+    int lpos = 127 + pos - frame;
+    interval = (lpos / ilen) % 6; // Number of interval
+    int ipos = lpos % ilen;        // position inside intervall
     switch (interval) {
       case 0:
          red = 255;
-         green = 255*lpos/ilen;
+         green = (255*ipos)/ilen;
          blue = 0;
          break;
       case 1:
-         red = 255 - (255*(lpos-ilen))/ilen;
+         red = 255 - (255*ipos)/ilen;
          green = 255;
          blue = 0;
          break;
       case 2:
          red = 0;
          green = 255;
-         blue = ((lpos-2*ilen)*255)/ilen;
+         blue = (255*ipos)/ilen;
          break;
       case 3:
          red = 0;
-         green = 255 - (255*(lpos-3*ilen))/ilen;
+         green = 255 - (255*ipos)/ilen;
          blue = 255;
          break;
       case 4:
-         red = (255*(lpos-4*ilen))/ilen;
+         red = 255*ipos/ilen;
          green = 0;
          blue = 255;
          break;
       case 5:
          red = 255;
          green = 0;
-         blue = 255 - (255*(lpos-5*ilen))/ilen;
+         blue = 255 - (255*ipos)/ilen;
          break;
-      case 6:
-         red=255;
-         green = 0;
-         blue = 0;
     }
     strip.setPixelColor(pos,red,green,blue);
   }
+}
+
+
+
+/**
+ * Set the anmiation speed
+ */
+void setSpeed(byte speed) {
+  switch (frameAni) {
+    case ANI_RAINBOW:
+      frameDelay = 490 * (100-speed)/100 + 10;
+      break;
+  }
+  Serial.print("Delay set to ");
+  Serial.println(frameDelay);
 }
 

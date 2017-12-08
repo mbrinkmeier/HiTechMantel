@@ -24,6 +24,12 @@ void HiTechMantel::readData(int len, byte buf[]) {
   }
 }
 
+void HiTechMantel::emptyWire() {
+  while (Wire.available()) {
+    Wire.read();
+  }
+}
+
 /*
 byte HiTechMantel:rainbowRed(int pos, int intervalLength) {
   int intNo = (pos / intervalLength) % 6;

@@ -10,9 +10,9 @@
 
 // The id of the flora
 
-// int id = ID_BACK;
-int id = ID_BELT;
-// int id = ID_ARM;
+//int id = ID_BACK;
+// int id = ID_BELT;
+int id = ID_ARM;
 
 HiTechMantel mantel = HiTechMantel();
 Adafruit_NeoPixel pixel = mantel.pixel;
@@ -29,7 +29,6 @@ void setup() {
   
 
   // Run the selftest
-  selftest();
 
   // Start the i2c conection
   Wire.begin(id);               // join i2c bus with address #8
@@ -37,6 +36,9 @@ void setup() {
 
   Serial.print("Listening on I2C with ID ");
   Serial.println(id);
+
+    selftest();
+
 }
 
 
