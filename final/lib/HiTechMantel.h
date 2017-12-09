@@ -4,6 +4,9 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_NeoPixel.h>
 
+#define DBG_PRINT(x) if (debugging) debugSerial.print(x);
+#define DBG_PRINTLN(x) if (debugging) debugSerial.println(x);
+
 #define CMD_PING 42
 #define CMD_SELFTEST 43
 #define START_BYTE 42
@@ -49,6 +52,20 @@
 #define CMD_PIR_RESET 0
 #define CMD_PIR_SET 2
 
+// LilyPad MP3
+#define ID_MP3 9
+
+#define CMD_MP3_RESET  0
+#define CMD_MP3_PLAY  1
+#define CMD_MP3_PAUSE 2
+#define CMD_MP3_STOP 3
+#define CMD_MP3_VOL_UP 4
+#define CMD_MP3_VOL_DOWN 5
+#define CMD_MP3_VOL_SET 6
+#define CMD_MP3_NEXT 7
+#define CMD_MP3_PREV 8
+#define CMD_MP3_MUTE 9
+
 // PULSE
 #define ID_PULSE 30
 
@@ -78,6 +95,7 @@ class HiTechMantel {
     byte readFromWire();
     void readData(int len, byte buf[]);
     void emptyWire();
+    void emptyWire(int count);
 
     // byte rainbowRed(int pos, int intervalLength);
     // byte rainbowGreen(int pos, int intervalLength);
