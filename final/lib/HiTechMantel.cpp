@@ -13,7 +13,7 @@ HiTechMantel::HiTechMantel() {
 }
 
 byte HiTechMantel::readFromWire() {
-  byte b = Wire.available() ? Wire.read() : 0;
+  byte b = ( Wire.available() > 0 ) ? Wire.read() : 0;
   return b;
 }
 
@@ -25,8 +25,15 @@ void HiTechMantel::readData(int len, byte buf[]) {
 }
 
 void HiTechMantel::emptyWire() {
-  while (Wire.available()) {
+  while (Wire.available()>0) {
     Wire.read();
+  }
+}
+
+void HiTechMantel::emptyWire(int count) {
+  while ( (Wire.available()>0) && (count > 0) ) {
+    Wire.read();
+    count--;
   }
 }
 
