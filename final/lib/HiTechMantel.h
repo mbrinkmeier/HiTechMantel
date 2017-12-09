@@ -18,6 +18,9 @@
 
 #define CMD_RGB_RESET 0
 #define CMD_RGB_SET 1
+#define CMD_RGB_RED 2
+#define CMD_RGB_GREEN 3
+#define CMD_RGB_BLUE 4
 
 // NeoPixel Strip
 #define ID_STRIP 4
@@ -35,8 +38,11 @@
 #define CMD_MATRIX_COLOR 1
 #define CMD_MATRIX_RAINBOW 2
 #define CMD_MATRIX_RUNNING 3
-#define CMD_MATRIX_TEXT 3
+#define CMD_MATRIX_TEXT 4
 #define CMD_MATRIX_SPEED 10
+#define CMD_MATRIX_RED 5
+#define CMD_MATRIX_GREEN 6
+#define CMD_MATRIX_BLUE 7
 
 // Motor
 #define ID_MOTOR 6
