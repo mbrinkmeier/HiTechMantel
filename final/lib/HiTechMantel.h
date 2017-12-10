@@ -45,9 +45,9 @@
 #define CMD_MATRIX_RUNNING 3
 #define CMD_MATRIX_TEXT 4
 #define CMD_MATRIX_SPEED 10
-#define CMD_MATRIX_RED 5
-#define CMD_MATRIX_GREEN 6
-#define CMD_MATRIX_BLUE 7
+#define CMD_MATRIX_RED 11
+#define CMD_MATRIX_GREEN 12
+#define CMD_MATRIX_BLUE 13
 
 // Motor
 #define ID_MOTOR 6
@@ -78,25 +78,14 @@
 #define CMD_MP3_MUTE 9
 
 // PULSE
-#define ID_PULSE 30
+#define ID_PULSE 10
 
 #define CMD_PULSE_STOP 0
 #define CMD_PULSE_START 1
 
-#define HEART_ID 30
-#define PIR_FRONT_ID 50;
-#define PIR_BACK_ID 51;
-
-#define RESET_REG    0
-#define SELFTEST_REG 42
-
-#define RGB_SET_REG  1
-
-#define PIR_SET_REG  1
-
-#define HRT_COL_REG 1
-#define HRT_TXT_REG 2
-#define HRT_HRT_REG 3
+// PIRs
+#define ID_PIR_FRONT 11;
+#define ID_PIR_BACK 12;
 
 
 class HiTechMantel {
