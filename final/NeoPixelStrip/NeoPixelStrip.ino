@@ -18,6 +18,7 @@
 
 #define ANI_COLOR 0
 #define ANI_RAINBOW 1
+#define ANI_PULSE 2
 
 int frameAni;     // The id of the animation
 int frameDelay;   // The time between two frames
@@ -27,6 +28,7 @@ int colRed;
 int colGreen;
 int colBlue;
 unsigned long lastFrame;
+bool colChanged = false;
 
 HiTechMantel mantel = HiTechMantel();
 Adafruit_NeoPixel pixel = mantel.pixel;
@@ -65,12 +67,18 @@ void setup() {
  */
 void loop() {
   long time = millis();
-  if ( (time - lastFrame > frameDelay) && (frameDelay > 0) ) {
+  if ( (colChanged) || ((time - lastFrame > frameDelay) && (frameDelay > 0)) ) {
     switch ( frameAni ) {
+      case ANI_COLOR:
+        doAniColor(frameCount);
+        break;
       case ANI_RAINBOW:
         doAniRainbow(frameCount);
         break;
+      case ANI_PULSE:
+        doAniPulse(frameCount);
     }
+    colChanged = false;
     lastFrame = millis();
     frameCount = ( frameCount + 1 ) % frameNumber; 
     strip.show();
@@ -111,6 +119,19 @@ void handleMsg(int numBytes) {
       break;
     case CMD_STRIP_SPEED:
       setSpeed(data[0]);
+      break;
+    case CMD_STRIP_RED:
+      colRed = data[0];
+      colChanged = true;
+      break;
+    case CMD_STRIP_GREEN:
+      colGreen = data[0];
+      colChanged = true;
+      break;
+    case CMD_STRIP_BLUE:
+      colBlue = data[0];
+      colChanged = true;
+      break;
   }
   // empty buffer
   while (Wire.available()) Wire.read();
@@ -140,25 +161,28 @@ void selftest() {
  * Initialize constant color
  */
 void initAniColor(int red, int green, int blue) {
+  colRed = red;
+  colGreen = green;
+  colBlue = blue;
+  
   frameAni = ANI_COLOR;
   frameCount = 1;
   frameNumber = 1;
   frameDelay = 0;  // No animation
   lastFrame = millis();
 
-  debugSerial.print("Setting color ");
-  debugSerial.print(red);
-  debugSerial.print(" ");
-  debugSerial.print(green);
-  debugSerial.print(" ");
-  debugSerial.println(blue);
-
-  for (int i = 0; i < LEN; i=i+1) {
-    strip.setPixelColor(i,red,green,blue);
-  }
-  strip.show();
-  delay(SHOW_DELAY);
+  colChanged = true;
 }
+
+/**
+ * Set everything to the same color
+ */
+void doAniColor(int frame) {
+  for (int i = 0; i < LEN; i=i+1) {
+    strip.setPixelColor(i,colRed,colGreen,colBlue);
+  }
+}
+
 
 /**
  * Initializte Rainbow animation
@@ -221,6 +245,29 @@ void doAniRainbow(int frame) {
 }
 
 
+/**
+ * Set a pulse of the current color
+ */
+void initAniPulse() {
+  frameAni = ANI_RAINBOW;
+  frameCount = 0;
+  frameNumber = 10;
+  frameDelay = 100;  
+}
+
+
+/**
+ * 
+ */
+void doAniPulse(int frame) {
+  for (int i = 0; i < LEN; i++) {
+    int pos = (i+frame) % frameNumber;
+    int r = (colRed*pos)/frameNumber;
+    int g = (colGreen*pos)/frameNumber;
+    int b = (colBlue*pos)/frameNumber;
+    strip.setPixelColor(i,r,g,b);
+  }
+}
 
 /**
  * Set the anmiation speed
@@ -228,7 +275,8 @@ void doAniRainbow(int frame) {
 void setSpeed(byte speed) {
   switch (frameAni) {
     case ANI_RAINBOW:
-      frameDelay = 490 * (100-speed)/100 + 10;
+    case ANI_PULSE:
+      frameDelay = 500 * (100-speed)/100;
       break;
   }
   Serial.print("Delay set to ");

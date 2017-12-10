@@ -26,7 +26,6 @@ void setup() {
   // Start the serial connection for debugging.
   Serial.begin(9600);
   pixel2.begin();
-  
 
   // Run the selftest
 

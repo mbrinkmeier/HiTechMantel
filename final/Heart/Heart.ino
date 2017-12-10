@@ -33,6 +33,7 @@ int colGreen = 0;
 int colBlue = 100;
 unsigned long lastFrame;
 String aniText;
+bool colChanged = false;
 
 HiTechMantel mantel = HiTechMantel();
 Adafruit_NeoPixel pixel = mantel.pixel;
@@ -86,14 +87,18 @@ void setup() {
  */
 void loop() {
   long time = millis();
-  if ( (time - lastFrame > frameDelay) && (frameDelay > 0) ) {
+  if ( (colChanged) || ((time - lastFrame > frameDelay) && (frameDelay > 0)) ) {
     switch ( frameAni ) {
       case ANI_TEXT:
         doAniText(frameCount);
         break;
       case ANI_HEART:
         break;
+      case ANI_COLOR:
+        doAniColor(frameCount);
+        break;
     }
+    colChanged = false;
     lastFrame= millis();
     frameCount = ( frameCount + 1 ) % frameNumber; 
     matrix.show();
@@ -135,7 +140,18 @@ void handleMsg(int numBytes) {
     case CMD_MATRIX_SPEED:
       setSpeed(data[0]);
       break;
-      
+    case CMD_MATRIX_RED:
+      colRed = data[0];
+      colChanged = true;
+      break;
+    case CMD_MATRIX_GREEN:
+      colGreen = data[0];
+      colChanged = true;
+      break;
+    case CMD_MATRIX_BLUE:
+      colBlue = data[0];
+      colChanged = true;
+      break;
   }
   // empty buffer
   while (Wire.available()) Wire.read();
@@ -173,21 +189,23 @@ void selftest() {
  * Initialize constant color
  */
 void initAniColor(int red, int green, int blue) {
+  colRed = red;
+  colGreen = green;
+  colBlue = blue;
+  colChanged = true;
+  
   frameAni = ANI_COLOR;
   frameCount = 1;
   frameNumber = 1;
   frameDelay = 0;  // No animation
   lastFrame = millis();
+}
 
-  debugSerial.print("Setting color ");
-  debugSerial.print(red);
-  debugSerial.print(" ");
-  debugSerial.print(green);
-  debugSerial.print(" ");
-  debugSerial.println(blue);
-
-
-  matrix.fillScreen(matrix.Color(red,green,blue));
+/**
+ * Do the color
+ */
+void doAniColor(int frame) {
+  matrix.fillScreen(matrix.Color(colRed,colGreen,colBlue));
   matrix.show();
   delay(SHOW_DELAY);
 }
@@ -212,6 +230,7 @@ void initAniText(byte data[], int dlen) {
   colRed = data[1];
   colGreen = data[2];
   colBlue = data[3];
+  colChanged = true;
   
   debugSerial.print("speed: ");
   debugSerial.print(data[0]);

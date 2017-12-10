@@ -29,7 +29,12 @@
 #define CMD_STRIP_COLOR 1
 #define CMD_STRIP_RAINBOW 2
 #define CMD_STRIP_RUNNING 3
+#define CMD_STRIP_PULSE 4
 #define CMD_STRIP_SPEED 10
+#define CMD_STRIP_RED 11
+#define CMD_STRIP_GREEN 12
+#define CMD_STRIP_BLUE 13
+
 
 // NeoPixel Matrix
 #define ID_MATRIX 5
