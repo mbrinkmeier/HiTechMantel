@@ -84,8 +84,8 @@
 #define CMD_PULSE_START 1
 
 // PIRs
-#define ID_PIR_FRONT 11;
-#define ID_PIR_BACK 12;
+#define ID_PIR_FRONT 11
+#define ID_PIR_BACK 12
 
 
 class HiTechMantel {
