@@ -7,9 +7,25 @@
  * 
  * If the interval is set to 0, it is checked if some signal
  * was detected since the last request.
+ *   
+ *  Copyright (c) 2017 Michael Brinkmeier (michael.brinkmeier@uni-osnabrueck.de)
+ *  
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *  
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
 #include <Wire.h>
 #include <HiTechMantel.h>
+
+#define debugSerial Serial
 
 #define PIR_PIN 10
 
@@ -17,7 +33,8 @@
 int id = ID_PIR_BACK;
 
 unsigned long interval;
-unsigned long lastTick;
+unsigned long lastMove;
+
 byte detected;
 
 HiTechMantel mantel = HiTechMantel();
@@ -27,7 +44,9 @@ Adafruit_NeoPixel pixel = mantel.pixel;
 void setup() {
   // Set the pin mode for the PIR Pin
   pinMode(PIR_PIN, INPUT);
-  interval = 300000; // Monitoring interval of 5 min
+  
+  interval = 10000; // default monitoring interval of 5 min
+  
   pixel.begin();
   pixel.setPixelColor(0,0,0,0);
   pixel.show();
@@ -54,24 +73,28 @@ void setup() {
  */
 void loop() {
   if ( interval > 0 ) {
-    long curTick = millis();
-    if ( curTick - lastTick >= interval ) {
-      // If Interval is over
-      detected = 0;
-      lastTick = curTick;
-      pixel.setPixelColor(0,0,0,0);
-      pixel.show();
-    }
-  }
-
-  int value = digitalRead(PIR_PIN);
-  digitalWrite(7,value);
   
-  detected = detected || ( value == HIGH);
-  if ( detected ) {
+    int value = digitalRead(PIR_PIN);
+    digitalWrite(7,value);
+
+    if ( value == HIGH ) {
       pixel.setPixelColor(0,255,0,0);
       pixel.show();    
-  }
+      debugSerial.println(F("Movement detected"));
+      lastMove = millis();
+    } else {
+      pixel.setPixelColor(0,255,0,0);
+      pixel.show();          
+    }
+
+    unsigned long curTime = millis();
+
+    if ( (curTime - lastMove) > interval ) {
+      pixel.setPixelColor(0,0,0,0);
+      pixel.show();        
+      debugSerial.println(F("No movement detected"));
+    }
+  }  
   delay(10);
 }
 
@@ -79,10 +102,12 @@ void loop() {
  * Send the detected signal and reset. 
  */
 void requestEvent() {
-  Wire.write(detected);
-  // Reset
-  detected = 0;
-  lastTick = millis();
+  unsigned long curTime = millis();
+  if ( (curTime - lastMove) <= interval ) {
+     Wire.write(1);
+  } else {
+    Wire.write(0);
+  }
 }
 
 
@@ -140,5 +165,6 @@ void selftest() {
   delay(500);
   pixel.setPixelColor(0,0,0,0);
   pixel.show();
+  delay(500);
 }
 

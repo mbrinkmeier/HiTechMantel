@@ -1,12 +1,31 @@
-/**
- * This sketch is the programm for the thre RGB controlling Floras.
+/** 
+ *  This sketch is the programm for the three RGB LEDs controlling Floras in
+ *  the HiTechCoat Project.
  * 
- * It receives the red, green and blue component to be displayed.
+ *  The RGB Led (WS2812B) is connected to LED_PIN (10).
+ *  
+ *  
+ *  Copyright (c) 2017 Michael Brinkmeier (michael.brinkmeier@uni-osnabrueck.de)
+ *  
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *  
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
+ 
 #include <Wire.h>
 #include <HiTechMantel.h>
 
 #define debugSerial Serial
+#define SHOW_DELAY 50
+#define PIXEL_PIN 10
 
 // The id of the flora
 // int id = ID_BACK;
@@ -19,13 +38,15 @@ int red = 0;
 int green = 0;
 int blue = 0;
 
+bool colorChanged = false;
+
 HiTechMantel mantel = HiTechMantel();
 
 // Floras own pixel
 Adafruit_NeoPixel pixel = mantel.pixel;                                  
 
 // the external pixel
-Adafruit_NeoPixel pixel2 = Adafruit_NeoPixel(1,10,NEO_GRBW + NEO_KHZ800);
+Adafruit_NeoPixel pixel2 = Adafruit_NeoPixel(1,PIXEL_PIN,NEO_GRBW + NEO_KHZ800);
 
 
 /**
@@ -55,6 +76,11 @@ void setup() {
  * The main loop does nothing.
  */
 void loop() {
+  // If the color changed, update the pixels
+  if (colorChanged) {
+    setColor();
+    colorChanged = false;
+  }
   delay(100);
 }
 
@@ -77,40 +103,40 @@ void receiveEvent(int numBytes) {
   DBG_PRINT(cmd);
   DBG_PRINT(F(" dlen: "));
   DBG_PRINT(dlen);
-  mantel.debugData(data,dlen);  
+  if (debugging) mantel.debugData(data,dlen);
+  DBG_PRINTLN("");
   
   switch (cmd) {
+    case CMD_SELFTEST:
+      // Run selftest
+      selftest();
+      // then reset
     case CMD_RGB_RESET:
-      pixel2.setPixelColor(0,0,0,0);
-      pixel.setPixelColor(0,0,0,0);
-      pixel2.show();
-      pixel.show();
+      // set color to black
       red = 0;
       green = 0;
       blue = 0;
-      break;
-    case CMD_SELFTEST:
-      selftest();
+      colorChanged = true;
       break;
     case CMD_RGB_SET:
       // Set the color
       red = data[0];
       green = data[1];
       blue = data[2];
-      // setColor();
+      colorChanged = true;
       break;
    case CMD_RGB_RED:
-     red = data[0];
-     setColor();
-     break;
+      red = data[0];
+      colorChanged = true;
+      break;
    case CMD_RGB_GREEN:
-     green = data[0];
-     setColor();
-     break;
+      green = data[0];
+      colorChanged = true;
+      break;
    case CMD_RGB_BLUE:
-     blue = data[0];
-     setColor();
-     break;
+      blue = data[0];
+      colorChanged = true;
+      break;
    case CMD_PING:
       Wire.onRequest(waitForPing);
       break;
@@ -188,8 +214,11 @@ void selftest() {
  */
 void setColor() {
   pixel2.setPixelColor(0,red,green,blue);
+  pixel2.show();
+  delay(SHOW_DELAY);
+  
   pixel.setPixelColor(0,red,green,blue);
   pixel.show();
-  pixel2.show();
+  delay(SHOW_DELAY);
 }
 

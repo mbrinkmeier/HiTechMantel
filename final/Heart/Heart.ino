@@ -3,6 +3,20 @@
  * 
  * The loop displays the current frame and waits a given time
  * till the next frame has to be displayed.
+ *   
+ *  Copyright (c) 2017 Michael Brinkmeier (michael.brinkmeier@uni-osnabrueck.de)
+ *  
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *  
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
 #include <Wire.h>
 #include <HiTechMantel.h>
@@ -42,7 +56,7 @@ Adafruit_NeoPixel pixel = mantel.pixel;
 Adafruit_NeoMatrix matrix = Adafruit_NeoMatrix(8, 8, DATA_PIN,
   NEO_MATRIX_TOP  + NEO_MATRIX_RIGHT +
   NEO_MATRIX_COLUMNS + NEO_MATRIX_PROGRESSIVE,
-  NEO_RGBW            + NEO_KHZ800);
+  NEO_GRBW            + NEO_KHZ800);
 
 char heart_rate = 0;
 unsigned long last_tick = 0;
@@ -66,7 +80,7 @@ void setup() {
   
 
   debugSerial.print("Running selftest ... ");
-  // selftest();
+  selftest();
   debugSerial.println("finished");
 
   frameAni = ANI_TEXT;
@@ -120,9 +134,9 @@ void handleMsg(int numBytes) {
 
   mantel.readData(dlen,data);
     
-  debugSerial.print("Received cmd: ");
+  debugSerial.print(F("Received cmd: "));
   debugSerial.print(cmd);
-  debugSerial.print("and dlen: ");
+  debugSerial.print(F(" dlen: "));
   debugSerial.println(dlen);
   mantel.debugData(data,dlen);
   debugSerial.println();
@@ -132,7 +146,7 @@ void handleMsg(int numBytes) {
       initAniColor(0,0,0);
       break;
     case CMD_MATRIX_COLOR:
-      initAniColor(data[0],data[1],data[2]);
+      initAniColor(colRed,colGreen,colBlue);
       break;
     case CMD_MATRIX_TEXT:
       initAniText(data,dlen);
@@ -166,9 +180,6 @@ void selftest() {
   // Do a little self test
   for (int row = 0; row < 8; row++) {
     for (int col = 0; col < 8; col++) {
-      Serial.print(row);
-      Serial.print(" ");
-      Serial.println(col);
       matrix.drawPixel(row,col,matrix.Color(255,0,0));
       matrix.show();
       delay(10);
@@ -220,26 +231,19 @@ void doAniColor(int frame) {
  */
 void initAniText(byte data[], int dlen) {
   frameAni = ANI_TEXT;
-  frameDelay = ( 500 - 9 * data[0]/5); // Compute delay; 255 should be 25 frames/sec; 0 shold be a second
+  // frameDelay = ( 500 - 9 * data[0]/5); // Compute delay; 255 should be 25 frames/sec; 0 shold be a second
   frameNumber = (dlen-3) * 8;
   frameCount = 0;
   aniText = "";
-  for ( int i = 0; i < dlen-4; i++) {
-    aniText = aniText + (char) data[i+4];
+  for ( int i = 0; i < dlen-3; i++) {
+    aniText = aniText + (char) data[i+3];
   }
-  colRed = data[1];
-  colGreen = data[2];
-  colBlue = data[3];
-  colChanged = true;
-  
-  debugSerial.print("speed: ");
-  debugSerial.print(data[0]);
-  debugSerial.print(" red: ");
-  debugSerial.print(data[1]);
-  debugSerial.print(" green: ");
-  debugSerial.print(data[2]);
-  debugSerial.print(" blue: ");
-  debugSerial.print(data[4]);
+  // colRed = data[1];
+  // colGreen = data[2];
+  // colBlue = data[3];
+  // colChanged = true;
+  // colRed = data[1];
+
   debugSerial.print(" text: ");
   debugSerial.println(aniText);
 }
@@ -260,10 +264,6 @@ void doAniText(int frame) {
  * Set the animation speed
  */
 void setSpeed(byte speed) {
-  switch (frameAni) {
-    case ANI_TEXT:
-      frameDelay = ( 500 - 9 * speed/5);
-      break;
-  }
+  frameDelay = ( 500 - 9 * speed/5);
 }
 

@@ -43,19 +43,20 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(LEN, PIN,  NEO_GRB + NEO_KHZ800);
 void setup() {
   debugSerial.begin(9600);
 
-  Wire.begin(ID_STRIP);
-  Wire.onReceive(handleMsg);
-
   delay(100);
   strip.begin();
   
-  debugSerial.print("NeoPixelStrip listening as ID ");
-  debugSerial.println(ID_STRIP);
-  
-
   debugSerial.print("Running selftest ... ");
   selftest();
   debugSerial.println("finished");
+
+  Wire.begin(ID_STRIP);
+  Wire.onReceive(handleMsg);
+
+  debugSerial.print("NeoPixelStrip listening as ID ");
+  debugSerial.println(ID_STRIP);
+
+  
 }
 
 /**
@@ -67,6 +68,7 @@ void setup() {
  */
 void loop() {
   long time = millis();
+  
   if ( (colChanged) || ((time - lastFrame > frameDelay) && (frameDelay > 0)) ) {
     switch ( frameAni ) {
       case ANI_COLOR:
@@ -77,6 +79,7 @@ void loop() {
         break;
       case ANI_PULSE:
         doAniPulse(frameCount);
+        break;
     }
     colChanged = false;
     lastFrame = millis();
@@ -100,10 +103,11 @@ void handleMsg(int numBytes) {
 
   mantel.readData(dlen,data);
   
-  debugSerial.print("Received cmd: ");
+  debugSerial.print(F("Received cmd: "));
   debugSerial.print(cmd);
-  debugSerial.print("and dlen: ");
-  debugSerial.println(dlen);
+  debugSerial.print(F(" dlen: "));
+  debugSerial.print(dlen);
+  debugSerial.print(F(" "));
   mantel.debugData(data,dlen);
   debugSerial.println();
   
@@ -132,6 +136,9 @@ void handleMsg(int numBytes) {
       colBlue = data[0];
       colChanged = true;
       break;
+    case CMD_STRIP_PULSE:
+      initAniPulse();
+      break;
   }
   // empty buffer
   while (Wire.available()) Wire.read();
@@ -142,7 +149,7 @@ void handleMsg(int numBytes) {
  * The selftest
  */
 void selftest() {
-  initAniColor(0,255,0);
+  initAniColor(0,0,0);
   
   for (int i = 0; i < LEN; i=i+1) {
     strip.setPixelColor(i,255,0,0);
@@ -249,7 +256,7 @@ void doAniRainbow(int frame) {
  * Set a pulse of the current color
  */
 void initAniPulse() {
-  frameAni = ANI_RAINBOW;
+  frameAni = ANI_PULSE;
   frameCount = 0;
   frameNumber = 10;
   frameDelay = 100;  
@@ -262,9 +269,9 @@ void initAniPulse() {
 void doAniPulse(int frame) {
   for (int i = 0; i < LEN; i++) {
     int pos = (i+frame) % frameNumber;
-    int r = (colRed*pos)/frameNumber;
-    int g = (colGreen*pos)/frameNumber;
-    int b = (colBlue*pos)/frameNumber;
+    int r = (colRed*pos*pos)/(frameNumber*frameNumber);
+    int g = (colGreen*pos*pos)/(frameNumber*frameNumber);
+    int b = (colBlue*pos*pos)/(frameNumber*frameNumber);
     strip.setPixelColor(i,r,g,b);
   }
 }
@@ -275,8 +282,10 @@ void doAniPulse(int frame) {
 void setSpeed(byte speed) {
   switch (frameAni) {
     case ANI_RAINBOW:
+      frameDelay = 490 * (100-speed)/100+10;
+      break;
     case ANI_PULSE:
-      frameDelay = 500 * (100-speed)/100;
+      frameDelay = 500- 5*speed + 10;
       break;
   }
   Serial.print("Delay set to ");
