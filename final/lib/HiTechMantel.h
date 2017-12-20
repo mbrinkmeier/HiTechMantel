@@ -44,6 +44,7 @@
 #define CMD_MATRIX_RAINBOW 2
 #define CMD_MATRIX_RUNNING 3
 #define CMD_MATRIX_TEXT 4
+#define CMD_MATRIX_HEART 5
 #define CMD_MATRIX_SPEED 10
 #define CMD_MATRIX_RED 11
 #define CMD_MATRIX_GREEN 12
@@ -82,6 +83,8 @@
 
 #define CMD_PULSE_STOP 0
 #define CMD_PULSE_START 1
+#define CMD_PULSE_SHOW 2
+#define CMD_WAKEUP 42
 
 // PIRs
 #define ID_PIR_FRONT 11

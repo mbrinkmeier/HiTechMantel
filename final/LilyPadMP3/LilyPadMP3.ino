@@ -132,7 +132,7 @@ void setup() {
 
 
 void loop() {
-  delay(10);
+  delay(100);
   if ( playing && !player.isPlaying() ) {
     trackNo = (trackNo+1) % noOfTracks;
     playTrack(filename[trackNo]);
@@ -157,7 +157,6 @@ void loop() {
 void handleMsg(int numBytes) {
   cmd = mantel.readFromWire();
   dlen = mantel.readFromWire();
-  data[255];
   mantel.readData(dlen,data);
   mantel.emptyWire();
 }
@@ -262,6 +261,6 @@ void playTrack(char *name) {
     DBG_PRINT(res);
     DBG_PRINTLN(F(" when trying to play track"));
   }
-  delay(100);
+  delay(10);
 }
 
