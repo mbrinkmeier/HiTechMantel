@@ -23,14 +23,12 @@
 // #include <Adafruit_GFX.h>
 // #include <Adafruit_NeoPixel.h>
 
-#define screenSerial Serial1
-#define debugSerial Serial
-
 #define PULSE_PIN A10
 #define PULSE_INTERVAL 500
 #define PULSE_AVG_COUNT 10
 
-#define SLEEPTIME 10000 // 60 sec till sleep
+#define SLEEPTIME 1000 // 1 min till sleep
+#define DEEPSLEEPTIME 10000 // 300 sec till deep sleep
 
 unsigned long lastActivity;   // The time of the last acitivty
 bool sleeping = false;        // A flag indicating the sleep mode
@@ -55,58 +53,6 @@ bool pulse;
 HiTechMantel mantel = HiTechMantel();
 Adafruit_NeoPixel pixel = mantel.pixel;
 
-
-void writeByte(byte id, byte data) {
-  Wire.beginTransmission(id);
-  Wire.write(data);
-  Wire.endTransmission(id);
-}
-
-
-void writeBytes(byte id, byte cmd, byte data[], int dlen) {
-  Wire.beginTransmission(id);
-  Wire.write(cmd);
-  for (int i = 0; i < dlen; i++ ) {
-    Wire.write(data[i]);
-  }
-  Wire.endTransmission(id);
-}
-
-
-byte readByte(byte id) {
-  byte b;
-  Wire.requestFrom(id,1);
-  if ( Wire.available() ) {
-    b = Wire.read();
-    while ( Wire.available() ) Wire.read();
-  }
-  return b;
-}
-
-byte readByteFromScreen() {
-  byte b = screenSerial.available() ? screenSerial.read() : 0;
-  delay(1);
-  return b;
-}
-
-
-void readBytesFromScreen(int len, byte buf[]) {
-  buf[0] = len;
-  for (int i = 1; i <= len; i++) {
-    buf[i] = readByteFromScreen();
-  }
-}
-
-
-/**
- * Send a command to screen
- */
-void sendToScreen(String cmd) {
-  screenSerial.print(cmd);
-  screenSerial.write(0xff);
-  screenSerial.write(0xff);
-  screenSerial.write(0xff);  
-}
 
 /**
  * Setup as I2C master
@@ -139,7 +85,7 @@ void setup() {
   debugSerial.println(F("Init done"));
   debugSerial.println(F("Listen as master"));
 
-  sendToScreen("page 0");
+  mantel.writeToScreen("page 0");
 }
 
 
@@ -173,7 +119,7 @@ void loop() {
     if ( sleeping ) wakeUp(); // wake up
     lastActivity = millis();
     
-    byte start = readByteFromScreen();
+    byte start = mantel.readByteFromScreen();
     // debugSerial.print("Received byte ");
     // debugSerial.println(start);
   
@@ -181,11 +127,11 @@ void loop() {
     if ( start == START_BYTE ) {
       
       // Start reading TARGET_ID, CMD_ID and DLEN
-      byte id = readByteFromScreen();
-      byte cmd = readByteFromScreen();
-      byte dlen = readByteFromScreen();
+      byte id = mantel.readByteFromScreen();
+      byte cmd = mantel.readByteFromScreen();
+      byte dlen = mantel.readByteFromScreen();
 
-      readBytesFromScreen(dlen,data);
+      mantel.readBytesFromScreen(data,dlen);
 
       // debug Output
       debugSerial.print("id: ");
@@ -227,7 +173,7 @@ void loop() {
         // Otherwise send cmd dlen data to id
 
         // I2c.write(id,cmd,data,dlen+1);
-        writeBytes(id,cmd,data,dlen+1);
+        mantel.writeBytesToSlave(id,cmd,data,dlen+1);
                 
         debugSerial.println("Relayed data:");
         debugSerial.print(cmd);
@@ -245,7 +191,7 @@ void loop() {
 
   unsigned long time = millis() - lastActivity;
   
-  if ( (time > 2*SLEEPTIME) && sleeping && (!sleepingDeep) ) {
+  if ( (time > DEEPSLEEPTIME) && sleeping && (!sleepingDeep) ) {
     goToSleep(true);
   } else if ((time > SLEEPTIME) && !sleeping ) {
     goToSleep(false);
@@ -320,11 +266,23 @@ void measurePulse() {
  */
 void wakeUp() {
   debugSerial.println(F("Waking Up!"));
+  if ( sleepingDeep ) {
+    // From deep sleep awaken with more action
+    char text[24] = "Hallo! Probier mich aus!";
+    mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_RED,0);
+    mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_GREEN,255);
+    mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_BLUE,0);
+    mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_COLOR,0);
+    // mantel.writeBytesToSlave(ID_MATRIX,CMD_MATRIX_TEXT,text,24);
+  } else {
+    // If the sleep is nt to deep, just wake up
+    mantel.writeToScreen(F("page 0"));
+  }
   sleeping = false;
   sleepingDeep = false;
-  sendToScreen(F("page 0"));
   lastActivity = millis();
 }
+
 
 /**
  * Go to sleep
@@ -345,20 +303,20 @@ void goToSleep(bool deep) {
   // I2c.write(ID_MATRIX,0);
   // I2c.write(ID_MP3,0);
   // I2c.write(ID_MOTOR,0);
-  writeByte(ID_BACK,0);
-  writeByte(ID_ARM,0);
-  writeByte(ID_BELT,0);
-  writeByte(ID_STRIP,0);
-  writeByte(ID_MATRIX,0);
-  writeByte(ID_MP3,0);
-  writeByte(ID_MOTOR,0);  // Send sleep signal to screen
+  mantel.writeByteToSlave(ID_BACK,0);
+  mantel.writeByteToSlave(ID_ARM,0);
+  mantel.writeByteToSlave(ID_BELT,0);
+  mantel.writeByteToSlave(ID_STRIP,0);
+  mantel.writeByteToSlave(ID_MATRIX,0);
+  mantel.writeByteToSlave(ID_MP3,0);
+  mantel.writeByteToSlave(ID_MOTOR,0);  // Send sleep signal to screen
   if ( deep ) {
     debugSerial.println(F("Going to deep sleep!"));
     sleepingDeep = true;
-    sendToScreen(F("page 14"));
+    mantel.writeToScreen(F("page 14"));
   } else {
     debugSerial.println(F("Going to sleep!"));
-    sendToScreen(F("page 13"));
+    mantel.writeToScreen(F("page 13"));
   }
 }
 
@@ -374,7 +332,7 @@ bool getPirActivity() {
   // Get Front PIR
   // I2c.read(ID_PIR_FRONT,1,1);
 
-  byte b = readByte(ID_PIR_FRONT);
+  byte b = mantel.readByteFromSlave(ID_PIR_FRONT);
   // byte b = I2c.receive();
   // while (I2c.available() > 0) I2c.receive();
   active = active || ( b >= motionThreshold );
@@ -384,7 +342,7 @@ bool getPirActivity() {
   // Get Back PIR
   // I2c.read(ID_PIR_BACK,1,1);
 
-  b = readByte(ID_PIR_BACK);
+  b = mantel.readByteFromSlave(ID_PIR_BACK);
   // while (I2c.available() > 0) I2c.receive();
   active = active || ( b >= motionThreshold );
 
@@ -408,7 +366,7 @@ bool getBackPirActivity() {
   // Get Back PIR
   // I2c.read(ID_PIR_BACK,1,data);
   
-  b = readByte(ID_PIR_BACK);
+  b = mantel.readByteFromSlave(ID_PIR_BACK);
   active = active || ( b >= motionThreshold );
 
   if (b != 0) debugSerial.println(F("Back PIR activity detected"));
@@ -429,4 +387,5 @@ void runWelcome() {
  */
 void startAlarm() {
 }
+
 

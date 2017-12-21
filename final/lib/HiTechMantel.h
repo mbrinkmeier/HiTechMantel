@@ -4,6 +4,9 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_NeoPixel.h>
 
+#define screenSerial Serial1
+#define debugSerial Serial
+
 #define DBG_PRINT(x) if (debugging) debugSerial.print(x);
 #define DBG_PRINTLN(x) if (debugging) debugSerial.println(x);
 
@@ -77,6 +80,7 @@
 #define CMD_MP3_NEXT 7
 #define CMD_MP3_PREV 8
 #define CMD_MP3_MUTE 9
+#define CMD_MP3_PLAY_TRACK 10
 
 // PULSE
 #define ID_PULSE 10
@@ -94,11 +98,23 @@
 class HiTechMantel {
   public:
     Adafruit_NeoPixel pixel;
+
     HiTechMantel();
     byte readFromWire();
     void readData(int len, byte buf[]);
     void emptyWire();
     void emptyWire(int count);
+
+    void writeByteToSlave(byte id, byte data);
+    void writeByteToSlave(byte id, byte cmd, byte data);
+    void writeBytesToSlave(byte id, byte cmd, byte data[], int dlen);
+
+    byte readByteFromSlave(byte id);
+
+    byte readByteFromScreen();
+    void readBytesFromScreen(byte buf[], int len);
+
+    void writeToScreen(String cmd);
 
     // byte rainbowRed(int pos, int intervalLength);
     // byte rainbowGreen(int pos, int intervalLength);

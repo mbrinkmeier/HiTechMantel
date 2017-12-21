@@ -243,6 +243,8 @@ void executeCmd() {
     case CMD_MP3_MUTE:
       player.setVolume(255,255);
       break;
+    case CMD_MP3_PLAY_TRACK:
+      break;
    }
    if (debugging) debugSerial.flush();
    cmd= NO_CMD;

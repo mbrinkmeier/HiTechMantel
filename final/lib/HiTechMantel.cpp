@@ -4,8 +4,6 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_NeoPixel.h>
 
-
-
 HiTechMantel::HiTechMantel() {
   pixel = Adafruit_NeoPixel(1,8,NEO_GRBW + NEO_KHZ800);
   pixel.begin();
@@ -35,6 +33,67 @@ void HiTechMantel::emptyWire(int count) {
     Wire.read();
     count--;
   }
+}
+
+
+void HiTechMantel::writeByteToSlave(byte id, byte data) {
+  Wire.beginTransmission(id);
+  Wire.write(data);
+  Wire.endTransmission(id);
+}
+
+
+void HiTechMantel::writeByteToSlave(byte id, byte cmd, byte data) {
+  Wire.beginTransmission(id);
+  Wire.write(cmd);
+  Wire.write(1);
+  Wire.write(data);
+  Wire.endTransmission(id);
+}
+
+
+void HiTechMantel::writeBytesToSlave(byte id, byte cmd, byte data[], int dlen) {
+  Wire.beginTransmission(id);
+  Wire.write(cmd);
+  for (int i = 0; i < dlen; i++ ) {
+   Wire.write(data[i]);
+  }
+  Wire.endTransmission(id);
+}
+
+
+byte HiTechMantel::readByteFromSlave(byte id) {
+  byte b;
+  Wire.requestFrom(id,1);
+  if ( Wire.available() ) {
+   b = Wire.read();
+   while ( Wire.available() ) Wire.read();
+ } else {
+   return 0;
+ }
+  return b;
+}
+
+
+byte HiTechMantel::readByteFromScreen() {
+  byte b = Serial1.available() ? Serial1.read() : 0;
+  delay(1);
+  return b;
+}
+
+
+void HiTechMantel::readBytesFromScreen(byte buf[], int len ) {
+  buf[0] = len;
+  for (int i = 1; i <= len; i++) {
+    buf[i] = readByteFromScreen();
+  }
+}
+
+void HiTechMantel::writeToScreen(String cmd) {
+  screenSerial.print(cmd);
+  screenSerial.write(0xff);
+  screenSerial.write(0xff);
+  screenSerial.write(0xff);
 }
 
 /*
