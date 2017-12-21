@@ -37,7 +37,7 @@
 
 int id = ID_PIR_BACK;       // The back sensor requires inverse logic
 bool inverseLogic = true;
-#define MOTION_MIN_LENGTH 1000
+#define MOTION_MIN_LENGTH 250
 
 
 unsigned long interval;    // The interval length
@@ -73,6 +73,8 @@ void setup() {
   Serial.print("Listening as ID ");
   Serial.println(id);
   Serial.flush();
+
+  delay(3000);
 }
 
 
@@ -85,7 +87,14 @@ void loop() {
   if ( interval > 0 ) {
   
     int value = digitalRead(PIR_PIN);
-    if ( inverseLogic ) value = 1-value;
+    if ( inverseLogic ) {
+      if ( value == HIGH ) {
+        value = LOW;
+      } else {
+        value = HIGH;
+      }
+    }
+
     
     digitalWrite(7,value);
 
@@ -106,8 +115,9 @@ void loop() {
            debugSerial.println(motions);
         }
       }
+      
     }
-
+    
     // Motion ends
     if ( ( value == LOW ) && ( motionDetected == true ) ) {
       motionDuration = millis() - lastMove;

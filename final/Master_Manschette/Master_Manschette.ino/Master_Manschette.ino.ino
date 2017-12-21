@@ -17,7 +17,8 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
- #include <I2C.h>
+// #include <I2C.h>
+#include <Wire.h>
 #include <HiTechMantel.h>
 // #include <Adafruit_GFX.h>
 // #include <Adafruit_NeoPixel.h>
@@ -29,13 +30,16 @@
 #define PULSE_INTERVAL 500
 #define PULSE_AVG_COUNT 10
 
-#define SLEEPTIME 30000 // 30 sec till sleep
+#define SLEEPTIME 10000 // 60 sec till sleep
 
 unsigned long lastActivity;   // The time of the last acitivty
-bool sleeping = false;
-bool sleepingDeep = false;
+bool sleeping = false;        // A flag indicating the sleep mode
+bool sleepingDeep = false;    // A flag indicting the deep sleep mode
 
-bool measuringPulse = false;
+bool alarm = false;           // A flag indicating wether an alarm should be given if motion is detected by the back sensor
+byte motionThreshold = 1;     // Number of subsequent intervals of motionafter which the coat wakes up or starts an alarm
+
+bool measuringPulse = false;  // Various values for measuring the pulse
 int pulseMin;
 int pulseMax;
 int pulseMid;
@@ -52,11 +56,39 @@ HiTechMantel mantel = HiTechMantel();
 Adafruit_NeoPixel pixel = mantel.pixel;
 
 
+void writeByte(byte id, byte data) {
+  Wire.beginTransmission(id);
+  Wire.write(data);
+  Wire.endTransmission(id);
+}
+
+
+void writeBytes(byte id, byte cmd, byte data[], int dlen) {
+  Wire.beginTransmission(id);
+  Wire.write(cmd);
+  for (int i = 0; i < dlen; i++ ) {
+    Wire.write(data[i]);
+  }
+  Wire.endTransmission(id);
+}
+
+
+byte readByte(byte id) {
+  byte b;
+  Wire.requestFrom(id,1);
+  if ( Wire.available() ) {
+    b = Wire.read();
+    while ( Wire.available() ) Wire.read();
+  }
+  return b;
+}
+
 byte readByteFromScreen() {
   byte b = screenSerial.available() ? screenSerial.read() : 0;
   delay(1);
   return b;
 }
+
 
 void readBytesFromScreen(int len, byte buf[]) {
   buf[0] = len;
@@ -79,8 +111,7 @@ void sendToScreen(String cmd) {
 /**
  * Setup as I2C master
  */
-void setup() {
-  
+void setup() {  
   debugSerial.begin(9600);
   screenSerial.begin(9600);
   
@@ -100,8 +131,9 @@ void setup() {
   delay(500);
   
   // Initialize I2C as master
-  I2c.begin();
-  I2c.timeOut(1000);
+  // I2c.begin();
+  // I2c.timeOut(1000);
+  Wire.begin();
 
   // Initialize serial connections
   debugSerial.println(F("Init done"));
@@ -118,7 +150,12 @@ void loop() {
   bool flag = false;
   byte data[256];
 
-  // Measur pulse
+  // Check for alarm
+  if (alarm && getBackPirActivity() ) {
+     startAlarm();
+  }
+  
+  // Measure pulse
   if (measuringPulse) {
     measurePulse();  
   }
@@ -182,11 +219,15 @@ void loop() {
             break;
           case CMD_PULSE_SHOW:
             break;
+          default:
+            wakeUp();
+            break;
         }
       } else {
         // Otherwise send cmd dlen data to id
 
-        I2c.write(id,cmd,data,dlen+1);
+        // I2c.write(id,cmd,data,dlen+1);
+        writeBytes(id,cmd,data,dlen+1);
                 
         debugSerial.println("Relayed data:");
         debugSerial.print(cmd);
@@ -204,18 +245,14 @@ void loop() {
 
   unsigned long time = millis() - lastActivity;
   
-  if ( time > 2*SLEEPTIME ) {
-    if ( sleeping ) {
-      if ( !sleepingDeep ) {
-        sleepingDeep = true;
-        sendToScreen(F("page 14"));
-        
-      }
-    } else {
-      goToSleep();
-    }
+  if ( (time > 2*SLEEPTIME) && sleeping && (!sleepingDeep) ) {
+    goToSleep(true);
+  } else if ((time > SLEEPTIME) && !sleeping ) {
+    goToSleep(false);
   }
-  delay(10);
+  
+ 
+  delay(10); 
 }
 
 
@@ -286,6 +323,7 @@ void wakeUp() {
   sleeping = false;
   sleepingDeep = false;
   sendToScreen(F("page 0"));
+  lastActivity = millis();
 }
 
 /**
@@ -293,51 +331,102 @@ void wakeUp() {
  * 
  * Reset all Floras
  */
-void goToSleep() {
+void goToSleep(bool deep) {
+  // check Pir activity before going to sleep
+  if ( getPirActivity() ) return;
+
   sleeping = true;
   measuringPulse = false;
-  debugSerial.println(F("Going to sleep!"));
   // Send all Floras the reset command
-  I2c.write(ID_BACK,0);
-  I2c.write(ID_ARM,0);
-  I2c.write(ID_BELT,0);
-  I2c.write(ID_STRIP,0);
-  I2c.write(ID_MATRIX,0);
-  I2c.write(ID_MP3,0);
-  I2c.write(ID_MOTOR,0);
-  // Send sleep signal to screen
-  sendToScreen(F("page 13"));
+  // I2c.write(ID_BACK,0);
+  // I2c.write(ID_ARM,0);
+  // I2c.write(ID_BELT,0);
+  // I2c.write(ID_STRIP,0);
+  // I2c.write(ID_MATRIX,0);
+  // I2c.write(ID_MP3,0);
+  // I2c.write(ID_MOTOR,0);
+  writeByte(ID_BACK,0);
+  writeByte(ID_ARM,0);
+  writeByte(ID_BELT,0);
+  writeByte(ID_STRIP,0);
+  writeByte(ID_MATRIX,0);
+  writeByte(ID_MP3,0);
+  writeByte(ID_MOTOR,0);  // Send sleep signal to screen
+  if ( deep ) {
+    debugSerial.println(F("Going to deep sleep!"));
+    sleepingDeep = true;
+    sendToScreen(F("page 14"));
+  } else {
+    debugSerial.println(F("Going to sleep!"));
+    sendToScreen(F("page 13"));
+  }
 }
 
 /**
  * Check both PIRS for activity in the last perios of time
  */
 bool getPirActivity() {
+  Serial.println(F("Checking pir activity"));
+  
   bool active = false;
   byte data[1];
   
   // Get Front PIR
-  I2c.read(ID_PIR_FRONT,1,data);
+  // I2c.read(ID_PIR_FRONT,1,1);
 
-  byte b = data[0];
-  active = active || ( b != 0 );
+  byte b = readByte(ID_PIR_FRONT);
+  // byte b = I2c.receive();
+  // while (I2c.available() > 0) I2c.receive();
+  active = active || ( b >= motionThreshold );
 
   if ( b != 0 ) debugSerial.println(F("Front PIR activity detected"));
 
   // Get Back PIR
-  I2c.read(ID_PIR_BACK,1,data);
+  // I2c.read(ID_PIR_BACK,1,1);
 
-  b = data[0];
-  active = active || ( b != 0 );
+  b = readByte(ID_PIR_BACK);
+  // while (I2c.available() > 0) I2c.receive();
+  active = active || ( b >= motionThreshold );
+
+  Serial.print(F("Received "));
+  Serial.println(b);
 
   if (b != 0) debugSerial.println(F("Back PIR activity detected"));
 
   return active;
 }
 
+
+/**
+ * Check both PIRS for activity in the last perios of time
+ */
+bool getBackPirActivity() {
+  bool active = false;
+  byte data[1];
+  byte b;
+  
+  // Get Back PIR
+  // I2c.read(ID_PIR_BACK,1,data);
+  
+  b = readByte(ID_PIR_BACK);
+  active = active || ( b >= motionThreshold );
+
+  if (b != 0) debugSerial.println(F("Back PIR activity detected"));
+
+  return active;
+}
+
+
 /**
  * Welcome a user
  */
 void runWelcome() {
+}
+
+
+/**
+ * Alarm!!
+ */
+void startAlarm() {
 }
 
