@@ -32,11 +32,18 @@
 
 #define DATA_PIN 9
 #define SHOW_DELAY 10
+#define DIMMER 3
 
 #define ANI_NONE  0
 #define ANI_COLOR  1
 #define ANI_TEXT  2
-#define ANI_HEART 3
+#define ANI_PULSE 3
+#define ANI_RAINBOW 4
+#define ANI_SWIRL 5
+#define ANI_WINDMILL 6
+#define ANI_PULSING 7
+#define ANI_WAVE 8
+
 
 int frameAni;     // The id of the animation
 int frameDelay;   // The time between two frames
@@ -45,8 +52,10 @@ int frameCount;   // Counts the current frame
 int colRed = 0;
 int colGreen = 0;
 int colBlue = 100;
+
 unsigned long lastFrame;
 String aniText;
+int aniSpeed;
 bool colChanged = false;
 
 HiTechMantel mantel = HiTechMantel();
@@ -83,12 +92,11 @@ void setup() {
   selftest();
   debugSerial.println("finished");
 
-  frameAni = ANI_TEXT;
-  frameDelay = 200; // Compute delay; 255 should be 25 frames/sec; 0 shold be a second
-  frameNumber = 12 * 6;
-  frameCount = 0;
+  // aniSpeed = 255;
+  // initAniWave();
+  
+  initAniText();
   aniText = "Willkommen!";
-
 }
 
 
@@ -106,10 +114,26 @@ void loop() {
       case ANI_TEXT:
         doAniText(frameCount);
         break;
-      case ANI_HEART:
-        break;
       case ANI_COLOR:
         doAniColor(frameCount);
+        break;
+      case ANI_PULSE:
+        doAniPulse(frameCount);
+        break;
+      case ANI_RAINBOW:
+        doAniRainbow(frameCount);
+        break;
+      case ANI_SWIRL:
+        doAniSwirl(frameCount);
+        break;
+      case ANI_WINDMILL:
+        doAniWindmill(frameCount);
+        break;
+      case ANI_PULSING:
+        doAniPulsing(frameCount);
+        break;
+      case ANI_WAVE:
+        doAniWave(frameCount);
         break;
     }
     colChanged = false;
@@ -166,6 +190,24 @@ void handleMsg(int numBytes) {
       colBlue = data[0];
       colChanged = true;
       break;
+    case CMD_MATRIX_PULSE:
+      initAniPulse();
+      break;
+    case CMD_MATRIX_RAINBOW:
+      initAniRainbow();
+      break;
+    case CMD_MATRIX_SWIRL:
+      initAniSwirl();
+      break;
+    case CMD_MATRIX_WINDMILL:
+      initAniWindmill();
+      break;
+    case CMD_MATRIX_PULSING:
+      initAniPulsing();
+      break;
+    case CMD_MATRIX_WAVE:
+      initAniWave();
+      break;
   }
   // empty buffer
   while (Wire.available()) Wire.read();
@@ -216,9 +258,7 @@ void initAniColor(int red, int green, int blue) {
  * Do the color
  */
 void doAniColor(int frame) {
-  matrix.fillScreen(matrix.Color(colRed,colGreen,colBlue));
-  matrix.show();
-  delay(SHOW_DELAY);
+  matrix.fillScreen(matrix.Color(colRed/DIMMER,colGreen/DIMMER,colBlue/DIMMER));
 }
 
 
@@ -231,22 +271,18 @@ void doAniColor(int frame) {
  */
 void initAniText(byte data[], int dlen) {
   frameAni = ANI_TEXT;
-  // frameDelay = ( 500 - 9 * data[0]/5); // Compute delay; 255 should be 25 frames/sec; 0 shold be a second
+  setSpeed(127);
   frameNumber = (dlen-3) * 8;
   frameCount = 0;
   aniText = "";
   for ( int i = 0; i < dlen-3; i++) {
     aniText = aniText + (char) data[i+3];
   }
-  // colRed = data[1];
-  // colGreen = data[2];
-  // colBlue = data[3];
-  // colChanged = true;
-  // colRed = data[1];
 
   debugSerial.print(" text: ");
   debugSerial.println(aniText);
 }
+
 
 /**
  * Compute the next frame for scrolling text
@@ -258,12 +294,238 @@ void doAniText(int frame) {
   matrix.setTextWrap(false);
   matrix.setCursor(6-frameCount,0);
   matrix.print(aniText);
+  setSpeed(aniSpeed);
 }
+
+
+/**-
+ * Initialize the Pulse animation
+ */
+void initAniPulse() {
+  frameAni = ANI_PULSE;
+  frameNumber = 4;
+  frameCount = 0;
+  aniText = "";
+  if ( (colRed == 0) && ( colGreen == 0) && (colBlue == 0) ) {
+    colRed = 255;
+  }
+  setSpeed(70);
+}
+
+// int heart[64] = {
+// }
+
+/**
+ * Compute the frame for pulse animation.
+ * 
+ * It pulses with the set frequency
+ */
+void doAniPulse(int frame) {
+  int brightness;
+  
+  int radius = 128 * ( frameNumber - frame ) / frameNumber;
+  
+  int dist;
+  for ( int col = 0; col < 8; col++ ) {    
+    for ( int row = 0; row < 8; row++ ) {
+      dist = (2*col-7)*(2*col-7) +(2*row-7)*(2*row-7); // distance from center
+      if ( dist < radius ) {
+        brightness = 255 * ( frameNumber - frame ) / frameNumber;
+      } else {
+        brightness = 255 * ( frameNumber - frame ) / (frameNumber*2);
+      }
+      matrix.drawPixel(col,row,matrix.Color(colRed*brightness/(255*DIMMER),colGreen*brightness/(255*DIMMER),colBlue*brightness/(255*DIMMER)));
+    }
+  }
+}
+
+
+/**
+ * Initialize the rainbow animation
+ */
+void initAniRainbow() {
+  frameAni = ANI_RAINBOW;
+  frameNumber = 30;
+  frameCount = 0;
+  aniText = "";
+  setSpeed(aniSpeed);
+}
+
+
+/**
+ * Compute the frame for rainbow animation.
+ */
+void doAniRainbow(int frame) {
+  int red, green, blue;
+  int pos;
+  for ( int col = 0; col < 8; col++ ) {
+    for ( int row = 0; row < 8; row++ ) {    
+      pos = (col+row+frame) % frameNumber;
+      red = mantel.rainbowRed(pos,frameNumber/6)/DIMMER;
+      green = mantel.rainbowGreen(pos,frameNumber/6)/DIMMER;
+      blue = mantel.rainbowBlue(pos,frameNumber/6)/DIMMER;
+      matrix.drawPixel(col,row,matrix.Color(red/DIMMER,green/DIMMER,blue/DIMMER));
+    }
+  }
+}
+
+/**
+ * Initialize the swirl animation
+ */
+void initAniSwirl() {
+  frameAni = ANI_SWIRL;
+  frameNumber = 64;
+  frameCount = 0;
+  aniText = "";
+  setSpeed(aniSpeed);
+}
+
+
+/**
+ * Compute the frame for swirl animation.
+ */
+void doAniSwirl(int frame) {
+  int red, green, blue;
+  int col,row,dcol,drow,dummy;
+  col = 0;
+  row = 0;
+  dcol = 1;
+  drow = 0;
+  for (int pos = 0; pos < 64; pos ++ ) {
+    int ipos = (64+pos-frame)%64;
+    red = mantel.rainbowRed(ipos,11)/DIMMER;
+    green = mantel.rainbowGreen(ipos,11)/DIMMER;
+    blue = mantel.rainbowBlue(ipos,11)/DIMMER;
+    matrix.drawPixel(col,row,matrix.Color(red,green,blue));
+    col = col + dcol;
+    row = row + drow;
+    if ( ( (row==col+1) && (col <= 3) ) || ( (row == col ) && (col>3) ) )  {
+      dummy = dcol;
+      dcol = -drow;
+      drow = dummy; 
+    } else if ( row == 7-col ) {
+      dummy = dcol;
+      dcol = drow;
+      drow = dummy;
+    }
+  }
+
+}
+
+/**
+ * Initialize the windmill animation
+ */
+void initAniWindmill() {
+  frameAni = ANI_WINDMILL;
+  frameNumber = 7;
+  frameCount = 0;
+  aniText = "";
+  setSpeed(aniSpeed);
+}
+
+
+/**
+ * Compute the frame for windmill animation.
+ */
+void doAniWindmill(int frame) {
+  int bright,red,green,blue;
+  matrix.clear();
+  for (int i = 1; i >= 0 ; i--) {
+    bright = (i==0) ? 255 : 64;
+    red = map(colRed,0,255,0,bright);
+    green = map(colGreen,0,255,0,bright);
+    blue = map(colBlue,0,255,0,bright);
+    matrix.drawLine(frame-i,0,7-frame+i,7,matrix.Color(red,green,blue));
+    matrix.drawLine(0,7-frame+i,7,frame-i,matrix.Color(red,green,blue));
+  }
+}
+
+
+/**
+ * Initialize the circle animation
+ */
+void initAniPulsing() {
+  frameAni = ANI_PULSING;
+  frameNumber = 8;
+  frameCount = 0;
+  aniText = "";
+  setSpeed(aniSpeed);
+}
+
+
+/**
+ * Compute the frame for circles animation.
+ */
+void doAniPulsing(int frame) {
+  int bright,red,green,blue;
+  matrix.clear();
+  for (int i = 0; i < 5 ; i++ ) {
+    bright = map((i+frame) % frameNumber,0,frameNumber-1,0,255);
+    red = map(colRed,0,255,0,bright)/2;
+    green = map(colGreen,0,255,0,bright)/2;
+    blue = map(colBlue,0,255,0,bright)/2;
+    matrix.fillRoundRect(3-i,3-i,2*(i+1),2*(i+1),i,matrix.Color(red,green,blue));
+  }
+}
+
+/**
+ * Initialize the circle animation
+ */
+void initAniWave() {
+  frameAni = ANI_WAVE;
+  frameNumber = 16;
+  frameCount = 0;
+  aniText = "";
+  setSpeed(aniSpeed);
+}
+
+
+/**
+ * Compute the frame for circles animation.
+ */
+void doAniWave(int frame) {
+  int red, green, blue;
+  int pos, bright;
+  for ( int col = 0; col < 8; col++ ) {
+    for ( int row = 0; row < 8; row++ ) {    
+      pos = (col+row+frame) % frameNumber;
+      bright = map(pos,0,frameNumber-1,255,48);
+      red = map(colRed,0,255,0,bright);
+      green = map(colGreen,0,255,0,bright);
+      blue = map(colBlue,0,255,0,bright);
+      matrix.drawPixel(col,row,matrix.Color(red/2,green/2,blue/2));
+    }
+  }
+}
+
 
 /**
  * Set the animation speed
  */
-void setSpeed(byte speed) {
-  frameDelay = ( 500 - 9 * speed/5);
+void setSpeed(int speed) {
+  aniSpeed = speed;
+  switch (frameAni) {
+    case ANI_PULSE:
+      // speed is BPM
+      frameDelay = 60000 / (aniSpeed*frameNumber);
+      break;
+    case ANI_RAINBOW:
+      frameDelay = map(aniSpeed,0,255,200,5);
+      break;
+    case ANI_WINDMILL:
+      frameDelay = map(aniSpeed,0,255,200,50); 
+      break;
+    case ANI_SWIRL:
+      frameDelay = map(aniSpeed,0,255,200,5); 
+      break;
+    case ANI_TEXT:
+      frameDelay = SHOW_DELAY * (255-aniSpeed)/255 + 2 * aniSpeed;
+      break;
+    default:
+      frameDelay = ( 500 - 9 * aniSpeed/5);
+  }
+  Serial.print(F("Set frame delay to "));
+  Serial.print(frameDelay);
+  Serial.println(F(" ms"));
 }
 

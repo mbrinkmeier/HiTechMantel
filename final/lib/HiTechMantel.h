@@ -47,11 +47,16 @@
 #define CMD_MATRIX_RAINBOW 2
 #define CMD_MATRIX_RUNNING 3
 #define CMD_MATRIX_TEXT 4
-#define CMD_MATRIX_HEART 5
+#define CMD_MATRIX_PULSE 5
+#define CMD_MATRIX_RAINBOW 6
+#define CMD_MATRIX_SWIRL 7
+#define CMD_MATRIX_WINDMILL 8
+#define CMD_MATRIX_PULSING 9
 #define CMD_MATRIX_SPEED 10
 #define CMD_MATRIX_RED 11
 #define CMD_MATRIX_GREEN 12
 #define CMD_MATRIX_BLUE 13
+#define CMD_MATRIX_WAVE 14
 
 // Motor
 #define ID_MOTOR 6
@@ -116,9 +121,9 @@ class HiTechMantel {
 
     void writeToScreen(String cmd);
 
-    // byte rainbowRed(int pos, int intervalLength);
-    // byte rainbowGreen(int pos, int intervalLength);
-    // byte rainbowBlue(int pos, int intervalLength);
+    byte rainbowRed(int pos, int intervalLength);
+    byte rainbowGreen(int pos, int intervalLength);
+    byte rainbowBlue(int pos, int intervalLength);
 
     void debugData(byte buf[], int len);
 };
