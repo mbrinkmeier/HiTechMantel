@@ -95,8 +95,7 @@ void setup() {
   // aniSpeed = 255;
   // initAniWave();
   
-  initAniText();
-  aniText = "Willkommen!";
+  initAniText("   Willkommen!",14);
 }
 
 
@@ -528,4 +527,3 @@ void setSpeed(int speed) {
   Serial.print(frameDelay);
   Serial.println(F(" ms"));
 }
-

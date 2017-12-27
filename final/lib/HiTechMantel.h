@@ -4,8 +4,13 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_NeoPixel.h>
 
+#ifdef ARDUINO_AVR_PRO
+#define screenSerial Serial
+#define debugSerial Serial
+#else
 #define screenSerial Serial1
 #define debugSerial Serial
+#endif
 
 #define DBG_PRINT(x) if (debugging) debugSerial.print(x);
 #define DBG_PRINTLN(x) if (debugging) debugSerial.println(x);
@@ -44,8 +49,6 @@
 
 #define CMD_MATRIX_RESET 0
 #define CMD_MATRIX_COLOR 1
-#define CMD_MATRIX_RAINBOW 2
-#define CMD_MATRIX_RUNNING 3
 #define CMD_MATRIX_TEXT 4
 #define CMD_MATRIX_PULSE 5
 #define CMD_MATRIX_RAINBOW 6
@@ -86,6 +89,9 @@
 #define CMD_MP3_PREV 8
 #define CMD_MP3_MUTE 9
 #define CMD_MP3_PLAY_TRACK 10
+#define CMD_MP3_PLAY_EFFECT 11
+
+#define SND_FANFARE 12
 
 // PULSE
 #define ID_PULSE 10
@@ -94,10 +100,6 @@
 #define CMD_PULSE_START 1
 #define CMD_PULSE_SHOW 2
 #define CMD_WAKEUP 42
-
-// PIRs
-#define ID_PIR_FRONT 11
-#define ID_PIR_BACK 12
 
 
 class HiTechMantel {
