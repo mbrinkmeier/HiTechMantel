@@ -16,6 +16,8 @@
  *  limitations under the License.
  */
 
+#define LILYPAD
+
 #include <Wire.h>
 #include <HiTechMantel.h>
 #include <SPI.h>            // To talk to the SD cars and MP3 schip
@@ -25,8 +27,6 @@
 #ifndef PSTR
   #define PSTR // Make Arduino Due happy
 #endif
-
-#define debugSerial Serial
 
 #define EN_GPIO1 A2
 #define SD_CS 9
@@ -108,8 +108,6 @@ void setup() {
       file.close();
       index++;
     }
-
-    
     noOfTracks = index;
 
     DBG_PRINT(F("Number of tracks: "));
@@ -117,7 +115,7 @@ void setup() {
   }
   
   // Set initial volume
-  player.setVolume(10,10);
+  player.setVolume(1,1);
 
   // Turn on amplifier
   digitalWrite(EN_GPIO1,HIGH);
@@ -127,6 +125,8 @@ void setup() {
 
   playing = false;
   cmd = NO_CMD;
+
+  playEffect(SND_FANFARE);
 }
 
 
@@ -166,6 +166,7 @@ void handleMsg(int numBytes) {
  * Execute the last command
  */
 void executeCmd() {      
+  int vol;
   DBG_PRINT(F("Executing cmd: "));
   DBG_PRINT(cmd);
   DBG_PRINT(F(" and dlen: "));
@@ -185,11 +186,12 @@ void executeCmd() {
     case CMD_MP3_PLAY:
     case CMD_MP3_PAUSE:
       // 0 -> 65, 255 -> 0
-      data[0] = 65 - (65*data[0])/255;
-      if ( data[0] >= 65 ) data[0] = 255;
-      DBG_PRINT(F("Setting volume to "));
-      DBG_PRINTLN(data[0]);
-      player.setVolume(data[0],data[0]);
+      // vol = map(data[0],0,100,65,0);
+      // data[0] = 65 - (65*data[0])/255;
+      // if ( data[0] >= 65 ) data[0] = 255;
+      // DBG_PRINT(F("Setting volume to "));
+      // DBG_PRINTLN(vol);
+      // player.setVolume(vol,vol);
 
       if ( player.getState() == paused_playback ) {
         DBG_PRINTLN(F("Resume"));
@@ -212,12 +214,12 @@ void executeCmd() {
     case CMD_MP3_VOL_DOWN:
       break;
     case CMD_MP3_VOL_SET:
-      // 0 -> 65, 255 -> 0
-      data[0] = 65 - (65*data[0])/255;
-      if ( data[0] >= 65 ) data[0] = 255;
+      vol = map(data[0],0,100,65,0);
+      // data[0] = 65 - (65*data[0])/255;
+      // if ( data[0] >= 65 ) data[0] = 255;
       DBG_PRINT(F("Setting volume to "));
-      DBG_PRINTLN(data[0]);
-      player.setVolume(data[0],data[0]);
+      DBG_PRINTLN(vol);
+      player.setVolume(vol,vol);
       break;
     case CMD_MP3_NEXT:
       trackNo = (trackNo+1) % noOfTracks;
@@ -243,7 +245,8 @@ void executeCmd() {
     case CMD_MP3_MUTE:
       player.setVolume(255,255);
       break;
-    case CMD_MP3_PLAY_TRACK:
+    case CMD_MP3_PLAY_EFFECT:
+      playEffect(data[0]);
       break;
    }
    if (debugging) debugSerial.flush();
@@ -255,6 +258,7 @@ void executeCmd() {
  * Play a track
  */
 void playTrack(char *name) {
+  sd.chdir("/tracks",true);
   DBG_PRINT(F("Playing track "));
   DBG_PRINTLN(filename[trackNo]);  
   int res = player.playMP3(filename[trackNo]);
@@ -264,5 +268,27 @@ void playTrack(char *name) {
     DBG_PRINTLN(F(" when trying to play track"));
   }
   delay(10);
+}
+
+
+/**
+ * Play effect
+ */
+void playEffect(int no) {
+  if ( player.isPlaying() ) {
+    player.stopTrack();
+    playing = false;
+  }
+  sd.chdir("/effects",true);
+  DBG_PRINT(F("Playing effect "));
+  String filename = String(no) + ".ogg";
+  DBG_PRINTLN(filename);  
+  int res = player.playMP3(filename.c_str());
+  if ( res != 0 ) {
+    DBG_PRINT(F("Error "));
+    DBG_PRINT(res);
+    DBG_PRINTLN(F(" when trying to play effect"));
+  }
+  delay(10);  
 }
 

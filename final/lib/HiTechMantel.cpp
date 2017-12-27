@@ -1,8 +1,8 @@
 #include"Arduino.h"
-#include "HiTechMantel.h"
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_NeoPixel.h>
+#include "HiTechMantel.h"
 
 HiTechMantel::HiTechMantel() {
   pixel = Adafruit_NeoPixel(1,8,NEO_GRBW + NEO_KHZ800);
@@ -64,7 +64,7 @@ void HiTechMantel::writeBytesToSlave(byte id, byte cmd, byte data[], int dlen) {
 
 byte HiTechMantel::readByteFromSlave(byte id) {
   byte b;
-  Wire.requestFrom(id,1);
+  Wire.requestFrom((int) id,1);
   if ( Wire.available() ) {
    b = Wire.read();
    while ( Wire.available() ) Wire.read();
@@ -76,7 +76,7 @@ byte HiTechMantel::readByteFromSlave(byte id) {
 
 
 byte HiTechMantel::readByteFromScreen() {
-  byte b = Serial1.available() ? Serial1.read() : 0;
+  byte b = screenSerial.available() ? screenSerial.read() : 0;
   delay(1);
   return b;
 }
@@ -88,6 +88,7 @@ void HiTechMantel::readBytesFromScreen(byte buf[], int len ) {
     buf[i] = readByteFromScreen();
   }
 }
+
 
 void HiTechMantel::writeToScreen(String cmd) {
   screenSerial.print(cmd);
