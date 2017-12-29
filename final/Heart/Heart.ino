@@ -70,6 +70,7 @@ Adafruit_NeoMatrix matrix = Adafruit_NeoMatrix(8, 8, DATA_PIN,
 char heart_rate = 0;
 unsigned long last_tick = 0;
 
+void (*hardReset)(void) = 0;
 
 /**
  * Initialize serial connections, I2C connection, pixel and strip.
@@ -207,6 +208,9 @@ void handleMsg(int numBytes) {
     case CMD_MATRIX_WAVE:
       initAniWave();
       break;
+    case CMD_HARD_RESET:
+      hardReset();
+      break;
   }
   // empty buffer
   while (Wire.available()) Wire.read();
@@ -278,7 +282,7 @@ void initAniText(byte data[], int dlen) {
     aniText = aniText + (char) data[i+3];
   }
 
-  debugSerial.print(" text: ");
+  debugSerial.print("text :");
   debugSerial.println(aniText);
 }
 
@@ -293,7 +297,7 @@ void doAniText(int frame) {
   matrix.setTextWrap(false);
   matrix.setCursor(6-frameCount,0);
   matrix.print(aniText);
-  setSpeed(aniSpeed);
+  // setSpeed(aniSpeed);
 }
 
 
