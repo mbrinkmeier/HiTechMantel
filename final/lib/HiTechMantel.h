@@ -1,3 +1,18 @@
+/**
+ *  Copyright (c) 2017 Michael Brinkmeier (michael.brinkmeier@uni-osnabrueck.de)
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 #ifndef HITECHMANTEL_H
 #define HITECHMANTEL_H
 
@@ -5,11 +20,11 @@
 #include <Adafruit_NeoPixel.h>
 
 #ifdef ARDUINO_AVR_PRO
-#define screenSerial Serial
-#define debugSerial Serial
+  #define screenSerial Serial
+  #define debugSerial Serial
 #else
-#define screenSerial Serial1
-#define debugSerial Serial
+  #define screenSerial Serial1
+  #define debugSerial Serial
 #endif
 
 #define DBG_PRINT(x) if (debugging) debugSerial.print(x);
@@ -17,6 +32,7 @@
 
 #define CMD_PING 42
 #define CMD_SELFTEST 43
+#define CMD_HARD_RESET 44
 #define START_BYTE 42
 
 // RGB
@@ -38,6 +54,7 @@
 #define CMD_STRIP_RAINBOW 2
 #define CMD_STRIP_RUNNING 3
 #define CMD_STRIP_PULSE 4
+#define CMD_STRIP_OWN 5
 #define CMD_STRIP_SPEED 10
 #define CMD_STRIP_RED 11
 #define CMD_STRIP_GREEN 12
@@ -129,6 +146,5 @@ class HiTechMantel {
 
     void debugData(byte buf[], int len);
 };
-
 
 #endif
