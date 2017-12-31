@@ -235,6 +235,14 @@ void loop() {
               mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_PULSE,pulseBPM);              
             }
             break;
+          case CMD_ALARM:
+            alarm = ( data[0] != 0 );
+            if ( alarm ) {
+              debugSerial.println(F("Alarm activated"));
+            } else {
+              debugSerial.println(F("Alarm deactivated"));
+            }
+            break;  
           default:
             wakeUp(false);
             break;
@@ -513,6 +521,32 @@ bool getBackPirActivity() {
  * Alarm!!
  */
 void startAlarm() {
+  alarm = false;
+  debugSerial.println(F("ALARM!!!"));
+  // Matrix
+  mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_RED,255);
+  mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_GREEN,0);
+  mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_BLUE,0);
+  mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_PULSING);
+  // Strip
+  mantel.writeByteToSlave(ID_STRIP,CMD_STRIP_RED,255);
+  mantel.writeByteToSlave(ID_STRIP,CMD_STRIP_GREEN,0);
+  mantel.writeByteToSlave(ID_STRIP,CMD_STRIP_BLUE,0);
+  mantel.writeByteToSlave(ID_STRIP,CMD_STRIP_PULSE);
+  // MP3
+  mantel.writeByteToSlave(ID_MP3,CMD_MP3_PLAY_EFFECT,5);
+  // Arm, belt and back
+  mantel.writeByteToSlave(ID_ARM,CMD_RGB_RED,1);
+  mantel.writeByteToSlave(ID_ARM,CMD_RGB_GREEN,0);
+  mantel.writeByteToSlave(ID_ARM,CMD_RGB_BLUE,0);
+  mantel.writeByteToSlave(ID_BELT,CMD_RGB_RED,1);
+  mantel.writeByteToSlave(ID_BELT,CMD_RGB_GREEN,0);
+  mantel.writeByteToSlave(ID_BELT,CMD_RGB_BLUE,0);
+  mantel.writeByteToSlave(ID_BACK,CMD_RGB_RED,1);
+  mantel.writeByteToSlave(ID_BACK,CMD_RGB_GREEN,0);
+  mantel.writeByteToSlave(ID_BACK,CMD_RGB_BLUE,0);
+  // 
+  mantel.writeToScreen(F("page 6"));
 }
 
 

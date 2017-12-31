@@ -33,6 +33,7 @@
 #define CMD_PING 42
 #define CMD_SELFTEST 43
 #define CMD_HARD_RESET 44
+
 #define START_BYTE 42
 
 // RGB
@@ -116,6 +117,7 @@
 #define CMD_PULSE_STOP 0
 #define CMD_PULSE_START 1
 #define CMD_PULSE_SHOW 2
+#define CMD_ALARM 3
 #define CMD_WAKEUP 42
 
 
