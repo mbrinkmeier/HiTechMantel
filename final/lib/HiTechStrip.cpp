@@ -224,7 +224,7 @@ void HiTechStrip::doAniPulse(int frame) {
 void HiTechStrip::initAniRunning() {
   frameAni = ANI_RUNNING;
   frameCount = 0;
-  frameNumber = 13;
+  frameNumber = 3;
   frameDelay = 100;
 }
 
@@ -234,7 +234,7 @@ void HiTechStrip::initAniRunning() {
  */
 void HiTechStrip::doAniRunning(int frame) {
   for (int i = 0; i < LEN; i++) {
-    int pos = ((i+frame*10) / 1 )% 3;
+    int pos = (i+frame*10) % 3;
     int r = (pos == 0) ? 255/DIMMER : 0 ;
     int g = (pos == 1) ? 255/DIMMER : 0 ;
     int b = (pos == 2) ? 255/DIMMER : 0 ;
@@ -248,11 +248,11 @@ void HiTechStrip::doAniRunning(int frame) {
  */
 void HiTechStrip::setSpeed(byte speed) {
   switch (frameAni) {
-    case ANI_RAINBOW:
-      frameDelay = map(speed,0,255,500,10);
-      break;
     case ANI_PULSE:
-      frameDelay = 500- 5*speed + 10;
+      frameDelay = 6000/speed;
+      break;
+    default:
+      frameDelay = map(speed,0,255,500,10);
       break;
   }
   Serial.print("Delay set to ");

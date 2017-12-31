@@ -52,11 +52,13 @@ bool pulseSecondBeat;
 bool pulse;
 int pulseIBI;
 int pulseBPM;
+int pulseOldBPM;
 int pulseSample[10];
 int pulseSampleIdx;
 int pulseSampleSum;
 int pulseMaxView;
 int pulseMinView;
+bool pulseShowing;
 
 
 
@@ -97,6 +99,8 @@ void setup() {
   debugSerial.println(F("Listen as master"));
 
   mantel.writeToScreen(F("page 0"));
+
+  pulseShowing = false;
 }
 
 
@@ -206,6 +210,9 @@ void loop() {
             measuringPulse = true;
             pulseIBI = 0;
             pulseBPM = 0;
+            pulseOldBPM = 0;
+            pulseShowing = true;
+              mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_PULSE,pulseBPM);              
             for (int i = 0 ; i < 10; i++) {
               pulseRate[i] = 0;
               pulseSample[i] = 0;
@@ -215,9 +222,18 @@ void loop() {
             break;
           case CMD_PULSE_STOP:
             measuringPulse = false;
+            pulseShowing = false;
             debugSerial.println(F("Stopping pulse measurement"));
+              mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_RESET);  
             break;
           case CMD_PULSE_SHOW:
+            if ( data[0] == 0 ) {
+              pulseShowing = false;
+              mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_RESET);  
+            } else {
+              pulseShowing = true;
+              mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_PULSE,pulseBPM);              
+            }
             break;
           default:
             wakeUp(false);
@@ -378,6 +394,12 @@ void measurePulse() {
   screenSerial.write(0xff);
   screenSerial.write(0xff);
   screenSerial.write(0xff);
+
+  
+  if ( (pulseShowing) && ( pulseBPM != pulseOldBPM ) ) {
+    pulseOldBPM = pulseBPM;
+    mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_SPEED,pulseBPM);
+  }
 }
 
 
