@@ -51,6 +51,7 @@ void HiTechStrip::setup() {
   debugSerial.flush();
 
   initAniOwn(this);
+  // initAniRunning();
 }
 
 
@@ -70,6 +71,9 @@ void HiTechStrip::loop() {
         break;
       case ANI_OWN:
         doAniOwn(STRIP,frameCount);
+        break;
+      case ANI_RUNNING:
+        doAniRunning(frameCount);
         break;
     }
     colChanged = false;
@@ -215,6 +219,31 @@ void HiTechStrip::doAniPulse(int frame) {
 }
 
 /**
+ * Set a pulse of the current color
+ */
+void HiTechStrip::initAniRunning() {
+  frameAni = ANI_RUNNING;
+  frameCount = 0;
+  frameNumber = 13;
+  frameDelay = 100;
+}
+
+
+/**
+ *
+ */
+void HiTechStrip::doAniRunning(int frame) {
+  for (int i = 0; i < LEN; i++) {
+    int pos = ((i+frame*10) / 1 )% 3;
+    int r = (pos == 0) ? 255/DIMMER : 0 ;
+    int g = (pos == 1) ? 255/DIMMER : 0 ;
+    int b = (pos == 2) ? 255/DIMMER : 0 ;
+    strip->setPixelColor(i,r,g,b);
+  }
+}
+
+
+/**
  * Set the anmiation speed
  */
 void HiTechStrip::setSpeed(byte speed) {
@@ -284,6 +313,9 @@ void handleStripMsg(int numBytes) {
     case CMD_STRIP_OWN:
       STRIP->frameAni = ANI_OWN;
       initAniOwn(STRIP);
+      break;
+    case CMD_STRIP_RUNNING:
+      STRIP->initAniRunning();
       break;
   }
   // empty buffer

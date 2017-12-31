@@ -31,13 +31,13 @@
 
 
 
-// int id = ID_PIR_FRONT;
-// bool inverseLogic = false;
-// #define MOTION_MIN_LENGTH 1000
-
-int id = ID_PIR_BACK;       // The back sensor requires inverse logic
-bool inverseLogic = true;
+int id = ID_PIR_FRONT;
+bool inverseLogic = false;
 #define MOTION_MIN_LENGTH 1000
+
+// int id = ID_PIR_BACK;       // The back sensor requires inverse logic
+// bool inverseLogic = true;
+// #define MOTION_MIN_LENGTH 1000
 
 
 unsigned long interval;    // The interval length
