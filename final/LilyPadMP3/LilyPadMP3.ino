@@ -178,10 +178,12 @@ void executeCmd() {
   
   switch (cmd) {
     case CMD_MP3_RESET:
+      debugSerial.println(F("Resetting"));
       player.stopTrack();
       player.setVolume(255,255);
       trackNo = 0;
       delay(100);
+      playing = false;
       break;
     case CMD_MP3_PLAY:
     case CMD_MP3_PAUSE:

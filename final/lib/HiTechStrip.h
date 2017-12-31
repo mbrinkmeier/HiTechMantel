@@ -23,11 +23,13 @@
 #define PIN 9
 #define LEN 127
 #define SHOW_DELAY 10
+#define DIMMER 3
 
 #define ANI_COLOR 0
 #define ANI_RAINBOW 1
 #define ANI_PULSE 2
 #define ANI_OWN 3
+#define ANI_RUNNING 4
 
 class HiTechStrip {
   public:
@@ -57,6 +59,8 @@ class HiTechStrip {
     void doAniRainbow(int frame);
     void initAniPulse();
     void doAniPulse(int frame);
+    void initAniRunning();
+    void doAniRunning(int frame);
 };
 
 void handleStripMsg(int numBytes);
