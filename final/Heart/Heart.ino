@@ -310,7 +310,7 @@ void initAniPulse() {
   frameCount = 0;
   aniText = "";
   if ( (colRed == 0) && ( colGreen == 0) && (colBlue == 0) ) {
-    colRed = 255;
+    colRed = 127;
   }
   setSpeed(70);
 }
@@ -331,13 +331,14 @@ void doAniPulse(int frame) {
   int dist;
   for ( int col = 0; col < 8; col++ ) {    
     for ( int row = 0; row < 8; row++ ) {
+      // dist = (2*col-7)*(2*col-7) +(2*row-7)*(2*row-7); // distance from center
       dist = (2*col-7)*(2*col-7) +(2*row-7)*(2*row-7); // distance from center
       if ( dist < radius ) {
         brightness = 255 * ( frameNumber - frame ) / frameNumber;
       } else {
         brightness = 255 * ( frameNumber - frame ) / (frameNumber*2);
       }
-      matrix.drawPixel(col,row,matrix.Color(colRed*brightness/(255*DIMMER),colGreen*brightness/(255*DIMMER),colBlue*brightness/(255*DIMMER)));
+      matrix.drawPixel(col,row,matrix.Color((colRed*brightness/255)/DIMMER,(colGreen*brightness/255)/DIMMER,(colBlue*brightness/255)/DIMMER));
     }
   }
 }
@@ -522,10 +523,10 @@ void setSpeed(int speed) {
       frameDelay = map(aniSpeed,0,255,200,5); 
       break;
     case ANI_TEXT:
-      frameDelay = SHOW_DELAY * (255-aniSpeed)/255 + 2 * aniSpeed;
+      frameDelay = map(aniSpeed,0,255,200,50);
       break;
     default:
-      frameDelay = ( 500 - 9 * aniSpeed/5);
+      frameDelay = map(aniSpeed,0,255,500,5);
   }
   Serial.print(F("Set frame delay to "));
   Serial.print(frameDelay);
