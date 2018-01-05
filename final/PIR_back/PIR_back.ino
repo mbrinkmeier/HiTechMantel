@@ -29,15 +29,13 @@
 
 #define PIR_PIN 10
 
-
-
 // int id = ID_PIR_FRONT;
 // bool inverseLogic = false;
 // #define MOTION_MIN_LENGTH 1000
 
 int id = ID_PIR_BACK;       // The back sensor requires inverse logic
 bool inverseLogic = true;
-#define MOTION_MIN_LENGTH 250
+#define MOTION_MIN_LENGTH 500
 
 
 unsigned long interval;    // The interval length
@@ -56,7 +54,7 @@ void setup() {
   // Set the pin mode for the PIR Pin
   pinMode(PIR_PIN, INPUT);
   
-  interval = 1000; // default monitoring interval of 0.5 sec
+  interval = 1000; // default monitoring interval of 1 sec
   
   pixel.begin();
   pixel.setPixelColor(0,0,0,0);
@@ -87,8 +85,8 @@ void loop() {
   if ( interval > 0 ) {
   
     int value = digitalRead(PIR_PIN);
-    if ( inverseLogic ) {
-      if ( value == HIGH ) {
+    if ( inverseLogic == true ) {
+      if ( value != LOW ) {
         value = LOW;
       } else {
         value = HIGH;
