@@ -234,7 +234,7 @@ void HiTechStrip::initAniRunning() {
  */
 void HiTechStrip::doAniRunning(int frame) {
   for (int i = 0; i < LEN; i++) {
-    int pos = (i+frame*10) % 3;
+    int pos = (i+frame) % 3;
     int r = (pos == 0) ? 255/DIMMER : 0 ;
     int g = (pos == 1) ? 255/DIMMER : 0 ;
     int b = (pos == 2) ? 255/DIMMER : 0 ;
@@ -259,6 +259,39 @@ void HiTechStrip::setSpeed(byte speed) {
   Serial.println(frameDelay);
 }
 
+
+void HiTechStrip::setColor(int led, long color) {
+  byte blue = color % 256;
+  color = color / 256;
+  byte green = color % 256;
+  color = color / 256;
+  byte red = color = color % 256;
+  strip->setPixelColor(led,red,green,blue);
+}
+
+
+void HiTechStrip::showColors(int start, int len, boolean repeat, boolean reverse) {
+  int fak = 1;
+  if (reverse) fak = -1;
+
+  if ( repeat == false ) {
+    for ( int i = 0; i < len ; i++ ) {
+      int pos = (fak*i+start) % LEN;
+      setColor(pos,colors[i]);
+    }
+  } else {
+    for ( int i = 0; i < LEN ; i++ ) {
+      int pos = (fak*i+start) % len;
+      setColor(i,colors[pos]);
+    }
+  }
+}
+
+
+long HiTechStrip::colorToLong(int red, int green, int blue) {
+  long col = (red * 256 + green) * 256 + blue ;
+  return col;
+}
 
 
 /**

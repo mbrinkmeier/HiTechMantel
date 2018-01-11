@@ -45,6 +45,7 @@ class HiTechStrip {
     int colBlue;
     unsigned long lastFrame;
     bool colChanged = false;
+    long colors[30];
 
     HiTechStrip();
 
@@ -61,6 +62,10 @@ class HiTechStrip {
     void doAniPulse(int frame);
     void initAniRunning();
     void doAniRunning(int frame);
+
+    void setColor(int led, long color);
+    void showColors(int start, int len, boolean repeat, boolean reverse);
+    long colorToLong(int red, int green, int blue);
 };
 
 void handleStripMsg(int numBytes);

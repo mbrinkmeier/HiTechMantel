@@ -117,8 +117,10 @@
 #define CMD_PULSE_STOP 0
 #define CMD_PULSE_START 1
 #define CMD_PULSE_SHOW 2
+
 #define CMD_ALARM 3
 #define CMD_WAKEUP 42
+#define CMD_ALARM_END 4
 
 
 class HiTechMantel {

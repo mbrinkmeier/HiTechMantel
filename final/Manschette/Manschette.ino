@@ -32,8 +32,10 @@ unsigned long lastActivity;   // The time of the last acitivty
 bool sleeping = false;        // A flag indicating the sleep mode
 bool sleepingDeep = false;    // A flag indicting the deep sleep mode
 
+byte zaehler = 0;
+
 bool alarm = false;           // A flag indicating wether an alarm should be given if motion is detected by the back sensor
-byte motionThreshold = 1;     // Number of subsequent intervals of motionafter which the coat wakes up or starts an alarm
+byte motionThreshold = 1;     // Number of subsequent intervals of motion after which the coat wakes up or starts an alarm
 
 bool measuringPulse = false;  // Various values for measuring the pulse
 
@@ -112,7 +114,7 @@ void loop() {
   
   // Check for alarm
   if (alarm && getBackPirActivity() ) {
-     startAlarm();
+    startAlarm();
   }
   
   
@@ -127,65 +129,40 @@ void loop() {
   if (measuringPulse) {
     measurePulse();  
   }
-
-  start = 0;
   
+  start = 0;
+
   // Check if data was received from screen
   if (screenSerial.available() ) {
     if ( sleeping ) wakeUp(false); // wake up
     lastActivity = millis();
     
     start = mantel.readByteFromScreen();
-    debugSerial.println(start);
-  
-    // If it was a START_BYTE start processing
-    if ( start == START_BYTE ) {
-      
-      // Start reading TARGET_ID, CMD_ID and DLEN
-      id = mantel.readByteFromScreen();
-      cmd = mantel.readByteFromScreen();
-      dlen = mantel.readByteFromScreen();
-
-      mantel.readBytesFromScreen(data,dlen);
-
-      // debug Output
-      debugSerial.println(F("Received command from screen"));
-
-      mantel.emptyWire();
-    }
+    debugSerial.print(F("read from screen: "));  
+    debugSerial.println(start);  
   }
 
-
-  if ( (start != START_BYTE) && debugSerial.available() ) {
-    if ( sleeping ) wakeUp(false); // wake up
-    lastActivity = millis();
-    
-    start = debugSerial.parseInt();
-  
-    // If it was a START_BYTE start processing
-    if ( start == START_BYTE ) {
+  // If it was a START_BYTE start processing
+  if ( start == START_BYTE ) {
       
-      // Start reading TARGET_ID, CMD_ID and DLEN
-      id = debugSerial.parseInt();
-      cmd = debugSerial.parseInt();
-      dlen = debugSerial.parseInt();
+    // Start reading TARGET_ID, CMD_ID and DLEN
+    id = mantel.readByteFromScreen();
+    cmd = mantel.readByteFromScreen();
+    dlen = mantel.readByteFromScreen();
 
-      for (int i = 0; i < dlen; i++ ) {
-        data[i] = debugSerial.parseInt();
-      }
-
-      // debug Output
-      debugSerial.println(F("Received command from debug serial"));
-    }
-  }
-
-  
-  if (start == START_BYTE) {
     debugSerial.print("id: ");
     debugSerial.print(id);
     debugSerial.print(" cmd: ");
     debugSerial.print(cmd);
     debugSerial.print(" dlen: ");
+    debugSerial.println(dlen);
+
+    mantel.readBytesFromScreen(data,dlen);
+
+    // debug Output
+    debugSerial.println(F("Received command from screen"));
+    mantel.emptyWire();
+
     mantel.debugData(data,dlen);
     debugSerial.println();
 
@@ -239,9 +216,16 @@ void loop() {
             alarm = ( data[0] != 0 );
             if ( alarm ) {
               debugSerial.println(F("Alarm activated"));
+              // byte d[4] = {208,7,0,0}; 
+              // mantel.writeBytesToSlave(ID_PIR_BACK,CMD_PIR_SET,d,4);
             } else {
               debugSerial.println(F("Alarm deactivated"));
+              // byte d[4] = {48,117,0,0}; 
+              // mantel.writeBytesToSlave(ID_PIR_BACK,CMD_PIR_SET,d,4);
             }
+            break;
+          case CMD_ALARM_END:
+            endAlarm();
             break;  
           default:
             wakeUp(false);
@@ -251,7 +235,7 @@ void loop() {
         // Otherwise send cmd dlen data to id
 
         // I2c.write(id,cmd,data,dlen+1);
-        mantel.writeBytesToSlave(id,cmd,data,dlen+1);
+        mantel.writeBytesToSlave(id,cmd,data,dlen);
                 
         debugSerial.println("Relayed data:");
         debugSerial.print(cmd);
@@ -264,6 +248,7 @@ void loop() {
         debugSerial.println();
         debugSerial.flush();
       }
+      
   }
   
   // Check time since last activity and go to sleep
@@ -277,6 +262,7 @@ void loop() {
  
   delay(5); 
 }
+
 
 
 /**
@@ -484,10 +470,7 @@ bool getFrontPirActivity() {
   bool active = false;
   byte data[1];
   byte b;
-  
-  // Get Back PIR
-  // I2c.read(ID_PIR_BACK,1,data);
-  
+    
   b = mantel.readByteFromSlave(ID_PIR_FRONT);
   active = active || ( b >= motionThreshold );
 
@@ -503,18 +486,19 @@ bool getFrontPirActivity() {
 bool getBackPirActivity() {
   bool active = false;
   byte data[1];
-  byte b;
-  
-  // Get Back PIR
-  // I2c.read(ID_PIR_BACK,1,data);
+  byte b = 0;
   
   b = mantel.readByteFromSlave(ID_PIR_BACK);
   active = active || ( b >= motionThreshold );
+
+  debugSerial.print(F("received "));
+  debugSerial.println(b);
 
   if (b != 0) debugSerial.println(F("Back PIR activity detected"));
 
   return active;
 }
+
 
 
 /**
@@ -549,4 +533,32 @@ void startAlarm() {
   mantel.writeToScreen(F("page 6"));
 }
 
+/**
+ * Alarm!!
+ */
+void endAlarm() {
+  alarm = false;
+  debugSerial.println(F("Ending alarm!!!"));
+  // Matrix
+  mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_RESET);
+  // Strip
+  mantel.writeByteToSlave(ID_STRIP,CMD_STRIP_RESET);
+  // MP3
+  mantel.writeByteToSlave(ID_MP3,CMD_MP3_STOP);
+  // Arm, belt and back
+  mantel.writeByteToSlave(ID_ARM,CMD_RGB_RED,0);
+  mantel.writeByteToSlave(ID_ARM,CMD_RGB_GREEN,0);
+  mantel.writeByteToSlave(ID_ARM,CMD_RGB_BLUE,0);
+  mantel.writeByteToSlave(ID_BELT,CMD_RGB_RED,0);
+  mantel.writeByteToSlave(ID_BELT,CMD_RGB_GREEN,0);
+  mantel.writeByteToSlave(ID_BELT,CMD_RGB_BLUE,0);
+  mantel.writeByteToSlave(ID_BACK,CMD_RGB_RED,0);
+  mantel.writeByteToSlave(ID_BACK,CMD_RGB_GREEN,0);
+  mantel.writeByteToSlave(ID_BACK,CMD_RGB_BLUE,0);
+  mantel.writeToScreen(F("page 0"));
+  mantel.writeToScreen(F("MainMenu.alarm.val=0"));
+  mantel.writeToScreen(F("alarmButton.picc=8"));
+  // byte d[4] = {48,117,0,0}; 
+  // mantel.writeBytesToSlave(ID_PIR_BACK,CMD_PIR_SET,d,4);
+}
 

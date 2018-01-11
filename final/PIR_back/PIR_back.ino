@@ -35,16 +35,15 @@
 
 int id = ID_PIR_BACK;       // The back sensor requires inverse logic
 bool inverseLogic = true;
-#define MOTION_MIN_LENGTH 500
+#define MOTION_MIN_LENGTH 250
 
 
-unsigned long interval;    // The interval length
+volatile unsigned long interval;    // The interval length
 unsigned long lastMove;    // The time of the last detected motion
 
 bool motionDetected = false;      // A flag indicating wether motion is currently going on
 unsigned long motionDuration = 0; // The duration of the last detected motion
-byte motions = 0;                 // The number of subsequent intervals in which a motion was detected
-byte detected;
+volatile byte motions = 0;                 // The number of subsequent intervals in which a motion was detected
 
 HiTechMantel mantel = HiTechMantel();
 
@@ -54,15 +53,15 @@ void setup() {
   // Set the pin mode for the PIR Pin
   pinMode(PIR_PIN, INPUT);
   
-  interval = 1000; // default monitoring interval of 1 sec
+  interval = 5000; // default monitoring interval of 1 sec
   
   pixel.begin();
   pixel.setPixelColor(0,0,0,0);
   pixel.show();
   
   Wire.begin(id);               // join i2c bus with address #8
-  Wire.onRequest(requestEvent); // register event
   Wire.onReceive(receiveEvent); // register event
+  Wire.onRequest(requestEvent); // register event
 
   selftest();
   
@@ -119,9 +118,7 @@ void loop() {
     // Motion ends
     if ( ( value == LOW ) && ( motionDetected == true ) ) {
       motionDuration = millis() - lastMove;
-      if (motionDuration > MOTION_MIN_LENGTH) {
-        motions += motionDuration/MOTION_MIN_LENGTH;  
-      }
+      motions += motionDuration/MOTION_MIN_LENGTH + 1;  
       motionDetected = false;
       debugSerial.println(F("Motion ends"));
       debugSerial.print(F("Number of detected motions : "));
@@ -143,19 +140,11 @@ void loop() {
  * Send the detected signal and reset. 
  */
 void requestEvent() {
+  digitalWrite(7,HIGH);
   Serial.println(F("Request received"));
   Serial.print(F("Send answer: "));
   Wire.write(motions);
   Serial.println(motions);
-  /*
-  unsigned long curTime = millis();
-  if ( (curTime - lastMove) <= interval ) {
-     Wire.write(motions);
-     Serial.println(motions);
-  } else {
-    Wire.write(0);
-    Serial.println(0);
-  }*/
 }
 
 
@@ -182,7 +171,6 @@ void receiveEvent() {
   switch (cmd) {
     case CMD_PIR_RESET:
       interval = 300000;
-      detected = 0;
       break;
     case CMD_PIR_SET:
       // read the first two bytes as intervall
@@ -190,6 +178,7 @@ void receiveEvent() {
       byte hi = dlen > 1 ? data[1] : 0;
       int sec = 256 * hi + lo;
       interval = 1000l*sec;
+      motions = 0;
       Serial.print("Interval set to ");
       Serial.println(interval);
       Serial.flush();

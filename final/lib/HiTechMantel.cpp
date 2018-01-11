@@ -60,6 +60,8 @@ void HiTechMantel::writeByteToSlave(byte id, byte data) {
 
 
 void HiTechMantel::writeByteToSlave(byte id, byte cmd, byte data) {
+  Serial.print("Writing ");
+  Serial.println(data);
   Wire.beginTransmission(id);
   Wire.write(cmd);
   Wire.write(1);
@@ -71,6 +73,7 @@ void HiTechMantel::writeByteToSlave(byte id, byte cmd, byte data) {
 void HiTechMantel::writeBytesToSlave(byte id, byte cmd, byte data[], int dlen) {
   Wire.beginTransmission(id);
   Wire.write(cmd);
+  Wire.write(dlen);
   for (int i = 0; i < dlen; i++ ) {
    Wire.write(data[i]);
   }
@@ -80,11 +83,21 @@ void HiTechMantel::writeBytesToSlave(byte id, byte cmd, byte data[], int dlen) {
 
 byte HiTechMantel::readByteFromSlave(byte id) {
   byte b;
-  Wire.requestFrom((int) id,1);
-  if ( Wire.available() ) {
-   b = Wire.read();
-   while ( Wire.available() ) Wire.read();
+  Serial.print(F("Request from "));
+  Serial.println(id);
+  Wire.requestFrom((int) id,1,true);
+
+  delay(500);
+  if ( Wire.available() > 0 ) {
+     b = Wire.read();
+     while ( Wire.available() ) {
+       Serial.println(Wire.read());
+     }
+
+     delay(200);
+
  } else {
+   Serial.println(F("Wire not available"));
    return 0;
  }
   return b;
@@ -99,8 +112,7 @@ byte HiTechMantel::readByteFromScreen() {
 
 
 void HiTechMantel::readBytesFromScreen(byte buf[], int len ) {
-  buf[0] = len;
-  for (int i = 1; i <= len; i++) {
+  for (int i = 0; i < len; i++) {
     buf[i] = readByteFromScreen();
   }
 }
