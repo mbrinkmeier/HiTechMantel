@@ -23,8 +23,8 @@
 #define PULSE_PIN A10
 #define PULSE_AVG_COUNT 10
 
-#define SLEEPTIME 300000 // 1 min till sleep
-#define DEEPSLEEPTIME 600000 // 300 sec till deep sleep
+#define SLEEPTIME 20000 // 1 min till sleep
+#define DEEPSLEEPTIME 40000 // 300 sec till deep sleep
 
 byte data[256];               // An array for buffering received data
 
@@ -216,12 +216,12 @@ void loop() {
             alarm = ( data[0] != 0 );
             if ( alarm ) {
               debugSerial.println(F("Alarm activated"));
-              // byte d[4] = {208,7,0,0}; 
-              // mantel.writeBytesToSlave(ID_PIR_BACK,CMD_PIR_SET,d,4);
+              byte d[4] = {208,7,0,0}; 
+              mantel.writeBytesToSlave(ID_PIR_BACK,CMD_PIR_SET,d,4);
             } else {
               debugSerial.println(F("Alarm deactivated"));
-              // byte d[4] = {48,117,0,0}; 
-              // mantel.writeBytesToSlave(ID_PIR_BACK,CMD_PIR_SET,d,4);
+              byte d[4] = {48,117,0,0}; 
+              mantel.writeBytesToSlave(ID_PIR_BACK,CMD_PIR_SET,d,4);
             }
             break;
           case CMD_ALARM_END:
@@ -411,7 +411,10 @@ void wakeUp(bool loud) {
     mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_GREEN,255);
     mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_BLUE,0);
     mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_COLOR,0);
-    // mantel.writeBytesToSlave(ID_MATRIX,CMD_MATRIX_TEXT,text,24);
+    mantel.writeBytesToSlave(ID_MATRIX,CMD_MATRIX_TEXT,text,24);
+    mantel.writeByteToSlave(ID_MP3,CMD_MP3_VOL_SET,100);
+    mantel.writeByteToSlave(ID_MP3,CMD_MP3_PLAY_EFFECT,SND_FANFARE);
+    mantel.writeToScreen(F("page 0"));
   } else {
     // If the sleep is not to deep, just wake up
     mantel.writeToScreen(F("page 0"));
@@ -439,7 +442,7 @@ void goToSleep(bool deep) {
   mantel.writeByteToSlave(ID_BELT,0);
   mantel.writeByteToSlave(ID_STRIP,0);
   mantel.writeByteToSlave(ID_MATRIX,0);
-  mantel.writeByteToSlave(ID_MP3,0);
+  mantel.writeByteToSlave(ID_MP3,CMD_MP3_VOL_SET,0);
   mantel.writeByteToSlave(ID_MOTOR,0);  // Send sleep signal to screen
   if ( deep ) {
     debugSerial.println(F("Going to deep sleep!"));
@@ -490,9 +493,6 @@ bool getBackPirActivity() {
   
   b = mantel.readByteFromSlave(ID_PIR_BACK);
   active = active || ( b >= motionThreshold );
-
-  debugSerial.print(F("received "));
-  debugSerial.println(b);
 
   if (b != 0) debugSerial.println(F("Back PIR activity detected"));
 
@@ -558,7 +558,7 @@ void endAlarm() {
   mantel.writeToScreen(F("page 0"));
   mantel.writeToScreen(F("MainMenu.alarm.val=0"));
   mantel.writeToScreen(F("alarmButton.picc=8"));
-  // byte d[4] = {48,117,0,0}; 
-  // mantel.writeBytesToSlave(ID_PIR_BACK,CMD_PIR_SET,d,4);
+  byte d[4] = {48,117,0,0}; 
+  mantel.writeBytesToSlave(ID_PIR_BACK,CMD_PIR_SET,d,4);
 }
 

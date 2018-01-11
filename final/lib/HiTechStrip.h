@@ -67,6 +67,10 @@ class HiTechStrip {
     void setColor(int led, long color);
     void showColors(int start, int len, boolean repeat, boolean reverse);
     long colorToLong(int red, int green, int blue);
+    long mixColors(long col1, long col2);
+
+    long runningPixel(int pos, int frame, int start, long color, boolean reverse);
+    long runningPixels(int pos, int frame, int start, int len,  long color[], boolean reverse);
 };
 
 void handleStripMsg(int numBytes);

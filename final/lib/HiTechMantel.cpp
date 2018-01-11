@@ -83,21 +83,16 @@ void HiTechMantel::writeBytesToSlave(byte id, byte cmd, byte data[], int dlen) {
 
 byte HiTechMantel::readByteFromSlave(byte id) {
   byte b;
-  Serial.print(F("Request from "));
-  Serial.println(id);
   Wire.requestFrom((int) id,1,true);
 
-  delay(500);
   if ( Wire.available() > 0 ) {
      b = Wire.read();
      while ( Wire.available() ) {
-       Serial.println(Wire.read());
      }
 
-     delay(200);
-
  } else {
-   Serial.println(F("Wire not available"));
+   Serial.print(F("Data not available from id: "));
+   Serial.println(id);
    return 0;
  }
   return b;

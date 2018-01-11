@@ -265,7 +265,7 @@ void HiTechStrip::setColor(int led, long color) {
   color = color / 256;
   byte green = color % 256;
   color = color / 256;
-  byte red = color = color % 256;
+  byte red = color % 256;
   strip->setPixelColor(led,red,green,blue);
 }
 
@@ -296,8 +296,53 @@ void HiTechStrip::showColors(int start, int len, boolean repeat, boolean reverse
 
 
 long HiTechStrip::colorToLong(int red, int green, int blue) {
-  long col = (red * 256 + green) * 256 + blue ;
+  long col = ((long) red * 256 + (long) green) * 256 + (long) blue ;
   return col;
+}
+
+
+long HiTechStrip::mixColors(long col1, long col2) {
+  byte blue1 = col1 % 256;
+  col1 = col1 / 256;
+  byte green1 = col1 % 256;
+  col1 = col1 / 256;
+  byte red1 = col1 % 256;
+
+  byte blue2 = col2 % 256;
+  col2 = col2 / 256;
+  byte green2 = col2 % 256;
+  col2 = col2 / 256;
+  byte red2 = col2 % 256;
+
+  red1 = red2 > red1 ? red2 : red1;
+  green1 = green2 > green1 ? green2 : green1;
+  blue1 = blue2 > blue1 ? blue2 : blue1;
+
+  return colorToLong(red1,green1,blue1);
+}
+
+
+long HiTechStrip::runningPixel(int pos, int frame, int start, long color, boolean reverse) {
+  int fak = 1;
+  if ( reverse ) fak = -1;
+
+  int led = (LEN + start + fak * frame) % LEN;
+
+  if ( led == pos ) return color;
+
+  return 0;
+}
+
+long HiTechStrip::runningPixels(int pos, int frame, int start, int len, long color[], boolean reverse) {
+  int fak = 1;
+  if ( reverse ) fak = -1;
+
+  int led = (LEN + start + fak * frame) % LEN;
+
+  int idx = pos - led;
+  if ( (idx >= 0) && (idx < len) ) return color[idx];
+
+  return 0;
 }
 
 

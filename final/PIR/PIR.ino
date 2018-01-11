@@ -1,14 +1,21 @@
 /**
- * This sketch is the programm for the NeoPixel running light STRIP.strip->
- *
+ * This sketch schecks, wether a signal was received from a
+ * digital PIR sensor during the last interval of time.
+ * 
+ * The interval can be set using I2C:
+ * 1 <intHi> <intLo>
+ * 
+ * If the interval is set to 0, it is checked if some signal
+ * was detected since the last request.
+ *   
  *  Copyright (c) 2017 Michael Brinkmeier (michael.brinkmeier@uni-osnabrueck.de)
- *
+ *  
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
- *
+ *  
  *  http://www.apache.org/licenses/LICENSE-2.0
- *
+ *  
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,47 +24,184 @@
  */
 #include <Wire.h>
 #include <HiTechMantel.h>
-#include <HiTechStrip.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_NeoPixel.h>
 
-HiTechStrip* strip = new HiTechStrip();
+#define debugSerial Serial
+
+#define PIR_PIN 10
+#define MOTION_MIN_LENGTH 250
+
+int id = ID_PIR_FRONT;
+bool inverseLogic = false;
+
+// int id = ID_PIR_BACK;       // The back sensor requires inverse logic
+// bool inverseLogic = true;
+// #define MOTION_MIN_LENGTH 250
 
 
+volatile unsigned long interval;    // The interval length
+unsigned long lastMove;    // The time of the last detected motion
+
+bool motionDetected = false;      // A flag indicating wether motion is currently going on
+unsigned long motionDuration = 0; // The duration of the last detected motion
+volatile byte motions = 0;                 // The number of subsequent intervals in which a motion was detected
+
+HiTechMantel mantel = HiTechMantel();
+
+Adafruit_NeoPixel pixel = mantel.pixel;
 
 void setup() {
-  strip->setup();
+  // Set the pin mode for the PIR Pin
+  pinMode(PIR_PIN, INPUT);
+  
+  interval = 5000; // default monitoring interval of 1 sec
+  
+  pixel.begin();
+  pixel.setPixelColor(0,0,0,0);
+  pixel.show();
+  
+  Wire.begin(id);               // join i2c bus with address #8
+  Wire.onReceive(receiveEvent); // register event
+  Wire.onRequest(requestEvent); // register event
+
+  selftest();
+  
+  Serial.begin(9600);
+
+  Serial.print("Listening as ID ");
+  Serial.println(id);
+  Serial.flush();
+
+  delay(3000);
 }
 
 
+/*
+ * Check the sensor and store a received signal.
+ * 
+ * interval == 0 means no measurmente
+ */
 void loop() {
-  strip->loop();
+  if ( interval > 0 ) {
+  
+    int value = digitalRead(PIR_PIN);
+    if ( inverseLogic == true ) {
+      if ( value != LOW ) {
+        value = LOW;
+      } else {
+        value = HIGH;
+      }
+    }
+
+    
+    digitalWrite(7,value);
+
+    // Motion starts
+    if ( value == HIGH ) {
+      if ( motionDetected == false ) {
+        pixel.setPixelColor(0,255,0,0);
+        pixel.show();    
+        motionDetected = true;
+        lastMove = millis();
+        debugSerial.println(F("Motion starts"));
+      } else {
+        motionDuration = millis() - lastMove;
+        if (motionDuration > MOTION_MIN_LENGTH) {
+           motions += motionDuration/MOTION_MIN_LENGTH;
+           lastMove = millis();     
+           debugSerial.print(F("Motion going on "));
+           debugSerial.println(motions);
+        }
+      }
+      
+    }
+    
+    // Motion ends
+    if ( ( value == LOW ) && ( motionDetected == true ) ) {
+      motionDuration = millis() - lastMove;
+      motions += motionDuration/MOTION_MIN_LENGTH + 1;  
+      motionDetected = false;
+      debugSerial.println(F("Motion ends"));
+      debugSerial.print(F("Number of detected motions : "));
+      debugSerial.println(motions);
+    }
+  
+    unsigned long curTime = millis();
+
+    if ( (curTime - lastMove) > interval ) {
+      motions = 0;
+      pixel.setPixelColor(0,0,0,0);
+      pixel.show();        
+    }
+  }  
+  delay(10);
+}
+
+/* 
+ * Send the detected signal and reset. 
+ */
+void requestEvent() {
+  digitalWrite(7,HIGH);
+  Serial.println(F("Request received"));
+  Serial.print(F("Send answer: "));
+  Wire.write(motions);
+  Serial.println(motions);
+}
+
+
+/*
+ * Set the interval, if a message is received.
+ */
+void receiveEvent() {
+  byte cmd;   // The command id
+  byte dlen;  // The data length
+  byte data[255];   // The data bytes
+
+  cmd = mantel.readFromWire();
+  dlen = mantel.readFromWire();
+  mantel.readData(dlen,data);
+
+  Serial.print("Received cmd: ");
+  Serial.print(cmd);
+  Serial.print(" dlen: ");
+  Serial.println(dlen);
+  mantel.debugData(data,dlen);
+  Serial.flush();
+
+
+  switch (cmd) {
+    case CMD_PIR_RESET:
+      interval = 300000;
+      break;
+    case CMD_PIR_SET:
+      // read the first two bytes as intervall
+      byte lo = dlen > 0 ? data[0] : 0;
+      byte hi = dlen > 1 ? data[1] : 0;
+      int sec = 256 * hi + lo;
+      interval = 1000l*sec;
+      motions = 0;
+      Serial.print("Interval set to ");
+      Serial.println(interval);
+      Serial.flush();
+      break;
+  }
+  mantel.emptyWire();
 }
 
 /**
- * Der eigene Code
+ * A simple selftest
  */
-
-void initAniOwn(HiTechStrip *strip) {
-  strip->frameAni = ANI_OWN;
-  strip->frameCount = 0;
-  strip->colRed = 255;
-  strip->colGreen = 0;
-  strip->colBlue = 0;
-
-   // setup code
-   strip->frameNumber = 127;
-   strip->frameDelay = 100;
-   strip->colors[0]=16711680;
-   strip->colors[1]=65280;
-   strip->colors[2]=255;
-
-
-}
-
-
-
-void doAniOwn(HiTechStrip *strip, int frame) {
-   strip->showColors(frame,3,false,false);
+void selftest() {
+  pixel.setPixelColor(0,255,0,0);
+  pixel.show();
+  delay(500);
+  pixel.setPixelColor(0,0,255,0);
+  pixel.show();
+  delay(500);
+  pixel.setPixelColor(0,0,0,255);
+  pixel.show();
+  delay(500);
+  pixel.setPixelColor(0,0,0,0);
+  pixel.show();
+  delay(500);
 }
 
