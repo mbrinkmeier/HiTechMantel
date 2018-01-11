@@ -269,19 +269,26 @@ void HiTechStrip::setColor(int led, long color) {
   strip->setPixelColor(led,red,green,blue);
 }
 
+void HiTechStrip::clearStrip() {
+  for (int led = 0; led < LEN; led++) {
+    strip->setPixelColor(led,0,0,0);
+  }
+}
 
 void HiTechStrip::showColors(int start, int len, boolean repeat, boolean reverse) {
+  clearStrip();
+
   int fak = 1;
   if (reverse) fak = -1;
 
   if ( repeat == false ) {
     for ( int i = 0; i < len ; i++ ) {
-      int pos = (fak*i+start) % LEN;
+      int pos = (LEN + i+fak*start) % LEN;
       setColor(pos,colors[i]);
     }
   } else {
     for ( int i = 0; i < LEN ; i++ ) {
-      int pos = (fak*i+start) % len;
+      int pos = (LEN + i+fak*start) % len;
       setColor(i,colors[pos]);
     }
   }

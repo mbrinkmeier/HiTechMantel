@@ -63,6 +63,7 @@ class HiTechStrip {
     void initAniRunning();
     void doAniRunning(int frame);
 
+    void clearStrip();
     void setColor(int led, long color);
     void showColors(int start, int len, boolean repeat, boolean reverse);
     long colorToLong(int red, int green, int blue);
