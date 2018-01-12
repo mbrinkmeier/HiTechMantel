@@ -71,6 +71,7 @@ class HiTechStrip {
 
     long runningPixel(int pos, int frame, int start, long color, boolean reverse);
     long runningPixels(int pos, int frame, int start, int len,  long color[], boolean reverse);
+    long runningRainbow(int pos, int frame, int start, int len, boolean reverse);
 };
 
 void handleStripMsg(int numBytes);

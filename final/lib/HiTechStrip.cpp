@@ -267,6 +267,10 @@ void HiTechStrip::setColor(int led, long color) {
   color = color / 256;
   byte red = color % 256;
   strip->setPixelColor(led,red,green,blue);
+  if ( led == 0 ) {
+    mantel->pixel.setPixelColor(0,red,green,blue);
+    mantel->pixel.show();
+  }
 }
 
 void HiTechStrip::clearStrip() {
@@ -345,6 +349,18 @@ long HiTechStrip::runningPixels(int pos, int frame, int start, int len, long col
   return 0;
 }
 
+long HiTechStrip::runningRainbow(int pos, int frame, int start, int len, boolean reverse) {
+  int fak = 1;
+  if ( reverse ) fak = -1;
+
+  int led = (LEN + start + fak * frame) % LEN;
+
+  int idx = pos - led;
+  if ( (idx >= 0) && (idx < len) ) return colorToLong(mantel->rainbowRed(idx,len/6),
+     mantel->rainbowGreen(idx,len/6),mantel->rainbowBlue(idx,len/6));
+
+  return 0;
+}
 
 /**
  * Handle incoming I2C Transmissions
