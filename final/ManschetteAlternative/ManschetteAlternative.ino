@@ -23,8 +23,8 @@
 #define PULSE_PIN A10
 #define PULSE_AVG_COUNT 10
 
-#define SLEEPTIME 5000 // 1 min till sleep
-#define DEEPSLEEPTIME 10000 // 300 sec till deep sleep
+#define SLEEPTIME 300000 // 5 min till sleep
+#define DEEPSLEEPTIME  420000 // 7 min till deep sleep
 
 byte data[256];               // An array for buffering received data
 
