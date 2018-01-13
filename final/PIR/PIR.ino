@@ -140,11 +140,11 @@ void loop() {
  * Send the detected signal and reset. 
  */
 void requestEvent() {
-  digitalWrite(7,HIGH);
-  Serial.println(F("Request received"));
-  Serial.print(F("Send answer: "));
+  // digitalWrite(7,HIGH);
+  // Serial.println(F("Request received"));
+  // Serial.print(F("Send answer: "));
   Wire.write(motions);
-  Serial.println(motions);
+  // Serial.println(motions);
 }
 
 

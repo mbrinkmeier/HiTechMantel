@@ -29,21 +29,24 @@
 
 #define PIR_PIN 10
 
-// int id = ID_PIR_FRONT;
-// bool inverseLogic = false;
+
+
+int id = ID_PIR_FRONT;
+bool inverseLogic = false;
+#define MOTION_MIN_LENGTH 1000
+
+// int id = ID_PIR_BACK;       // The back sensor requires inverse logic
+// bool inverseLogic = true;
 // #define MOTION_MIN_LENGTH 1000
 
-int id = ID_PIR_BACK;       // The back sensor requires inverse logic
-bool inverseLogic = true;
-#define MOTION_MIN_LENGTH 250
 
-
-volatile unsigned long interval;    // The interval length
+unsigned long interval;    // The interval length
 unsigned long lastMove;    // The time of the last detected motion
 
 bool motionDetected = false;      // A flag indicating wether motion is currently going on
 unsigned long motionDuration = 0; // The duration of the last detected motion
-volatile byte motions = 0;                 // The number of subsequent intervals in which a motion was detected
+byte motions = 0;                 // The number of subsequent intervals in which a motion was detected
+byte detected;
 
 HiTechMantel mantel = HiTechMantel();
 
@@ -52,26 +55,25 @@ Adafruit_NeoPixel pixel = mantel.pixel;
 void setup() {
   // Set the pin mode for the PIR Pin
   pinMode(PIR_PIN, INPUT);
+
   
-  interval = 5000; // default monitoring interval of 1 sec
-  
+  interval = 1000; // default monitoring interval of 0.5 sec
+
+  Serial.begin(9600);
+
   pixel.begin();
   pixel.setPixelColor(0,0,0,0);
   pixel.show();
   
   Wire.begin(id);               // join i2c bus with address #8
   Wire.onReceive(receiveEvent); // register event
-  Wire.onRequest(requestEvent); // register event
+  // Wire.onRequest(requestEvent); // register event
 
   selftest();
   
-  Serial.begin(9600);
-
   Serial.print("Listening as ID ");
   Serial.println(id);
   Serial.flush();
-
-  delay(3000);
 }
 
 
@@ -84,16 +86,9 @@ void loop() {
   if ( interval > 0 ) {
   
     int value = digitalRead(PIR_PIN);
-    if ( inverseLogic == true ) {
-      if ( value != LOW ) {
-        value = LOW;
-      } else {
-        value = HIGH;
-      }
-    }
-
+    if ( inverseLogic ) value = 1-value;
     
-    digitalWrite(7,value);
+    // digitalWrite(7,value);
 
     // Motion starts
     if ( value == HIGH ) {
@@ -112,13 +107,14 @@ void loop() {
            debugSerial.println(motions);
         }
       }
-      
     }
-    
+
     // Motion ends
     if ( ( value == LOW ) && ( motionDetected == true ) ) {
       motionDuration = millis() - lastMove;
-      motions += motionDuration/MOTION_MIN_LENGTH + 1;  
+      if (motionDuration > MOTION_MIN_LENGTH) {
+        motions += motionDuration/MOTION_MIN_LENGTH;  
+      }
       motionDetected = false;
       debugSerial.println(F("Motion ends"));
       debugSerial.print(F("Number of detected motions : "));
@@ -140,11 +136,11 @@ void loop() {
  * Send the detected signal and reset. 
  */
 void requestEvent() {
-  // digitalWrite(7,HIGH);
-  // Serial.println(F("Request received"));
-  //Serial.print(F("Send answer: "));
+  digitalWrite(7,HIGH);
+  Serial.println(F("Request received"));
+  Serial.print(F("Send answer: "));
   Wire.write(motions);
-  // Serial.println(motions);
+  Serial.println(motions);
 }
 
 
@@ -171,6 +167,7 @@ void receiveEvent() {
   switch (cmd) {
     case CMD_PIR_RESET:
       interval = 300000;
+      detected = 0;
       break;
     case CMD_PIR_SET:
       // read the first two bytes as intervall
@@ -178,7 +175,6 @@ void receiveEvent() {
       byte hi = dlen > 1 ? data[1] : 0;
       int sec = 256 * hi + lo;
       interval = 1000l*sec;
-      motions = 0;
       Serial.print("Interval set to ");
       Serial.println(interval);
       Serial.flush();

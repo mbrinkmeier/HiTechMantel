@@ -110,9 +110,9 @@ void HiTechStrip::selftest() {
  * Initialize constant color
  */
 void HiTechStrip::initAniColor(int red, int green, int blue) {
-  colRed = red;
-  colGreen = green;
-  colBlue = blue;
+  // colRed = red;
+  // colGreen = green;
+  // colBlue = blue;
 
   frameAni = ANI_COLOR;
   frameCount = 1;

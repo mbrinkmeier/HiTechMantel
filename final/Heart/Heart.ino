@@ -306,7 +306,7 @@ void doAniText(int frame) {
  */
 void initAniPulse() {
   frameAni = ANI_PULSE;
-  frameNumber = 4;
+  frameNumber = 3;
   frameCount = 0;
   aniText = "";
   if ( (colRed == 0) && ( colGreen == 0) && (colBlue == 0) ) {
@@ -317,6 +317,41 @@ void initAniPulse() {
 
 // int heart[64] = {
 // }
+
+byte hearAni[3][8][8] = {
+  {
+    {0,1,1,0,0,1,1,0},
+    {1,0,0,1,1,0,0,1},
+    {1,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,1},
+    {0,1,0,0,0,0,1,0},
+    {0,0,1,0,0,1,0,0},
+    {0,0,0,1,1,0,0,0}    
+  }
+  ,
+  {
+    {0,1,1,0,0,1,1,0},
+    {1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1},
+    {0,1,1,1,1,1,1,0},
+    {0,0,1,1,1,1,0,0},
+    {0,0,0,1,1,0,0,0}
+  }
+  ,
+  {
+    {0,1,1,0,0,1,1,0},
+    {1,0,0,1,1,0,0,1},
+    {1,0,1,0,0,1,0,1},
+    {1,0,1,1,1,1,0,1},
+    {1,0,1,1,1,1,0,1},
+    {0,1,0,1,1,0,1,0},
+    {0,0,1,0,0,1,0,0},
+    {0,0,0,1,1,0,0,0}
+  }
+};
 
 /**
  * Compute the frame for pulse animation.
@@ -331,13 +366,15 @@ void doAniPulse(int frame) {
   int dist;
   for ( int col = 0; col < 8; col++ ) {    
     for ( int row = 0; row < 8; row++ ) {
-      // dist = (2*col-7)*(2*col-7) +(2*row-7)*(2*row-7); // distance from center
+      /*
       dist = (2*col-7)*(2*col-7) +(2*row-7)*(2*row-7); // distance from center
       if ( dist < radius ) {
         brightness = 255 * ( frameNumber - frame ) / frameNumber;
       } else {
         brightness = 255 * ( frameNumber - frame ) / (frameNumber*2);
       }
+      */
+      brightness = hearAni[frame][row][col]*255;
       matrix.drawPixel(col,row,matrix.Color((colRed*brightness/255)/DIMMER,(colGreen*brightness/255)/DIMMER,(colBlue*brightness/255)/DIMMER));
     }
   }
