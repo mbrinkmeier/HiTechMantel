@@ -44,11 +44,11 @@ int trackNo;
 int noOfTracks;
 bool playing;
 
-bool debugging = true;
+bool debugging = false;
 
-byte cmd;
-byte dlen;
-byte data[255];
+volatile byte cmd;
+volatile byte dlen;
+volatile byte data[255];
 
 
 void setup() {
@@ -167,18 +167,18 @@ void handleMsg(int numBytes) {
  */
 void executeCmd() {      
   int vol;
-  DBG_PRINT(F("Executing cmd: "));
-  DBG_PRINT(cmd);
-  DBG_PRINT(F(" and dlen: "));
-  DBG_PRINTLN(dlen);
-  if (debugging) mantel.debugData(data,dlen);
-  DBG_PRINTLN();
-  if (debugging) debugSerial.flush();
+  // DBG_PRINT(F("Executing cmd: "));
+  // DBG_PRINT(cmd);
+  // DBG_PRINT(F(" and dlen: "));
+  // DBG_PRINTLN(dlen);
+  // if (debugging) mantel.debugData(data,dlen);
+  // DBG_PRINTLN();
+  // if (debugging) debugSerial.flush();
 
   
   switch (cmd) {
     case CMD_MP3_RESET:
-      debugSerial.println(F("Resetting"));
+      // debugSerial.println(F("Resetting"));
       player.stopTrack();
       player.setVolume(255,255);
       trackNo = 0;
@@ -196,10 +196,10 @@ void executeCmd() {
       // player.setVolume(vol,vol);
 
       if ( player.getState() == paused_playback ) {
-        DBG_PRINTLN(F("Resume"));
+        // DBG_PRINTLN(F("Resume"));
         player.resumeMusic();
       } else if ( player.getState() == playback ) {
-        DBG_PRINTLN(F("Pause"));
+        // DBG_PRINTLN(F("Pause"));
         player.pauseMusic();
       } else {
         playTrack(filename[trackNo]);
@@ -207,7 +207,7 @@ void executeCmd() {
       playing = true;
       break;
     case CMD_MP3_STOP:
-      DBG_PRINTLN(F("Stop"));
+      // DBG_PRINTLN(F("Stop"));
       player.stopTrack();
       playing = false;
       break;
@@ -219,14 +219,14 @@ void executeCmd() {
       vol = map(data[0],0,100,65,0);
       // data[0] = 65 - (65*data[0])/255;
       // if ( data[0] >= 65 ) data[0] = 255;
-      DBG_PRINT(F("Setting volume to "));
-      DBG_PRINTLN(vol);
+      // DBG_PRINT(F("Setting volume to "));
+      // DBG_PRINTLN(vol);
       player.setVolume(vol,vol);
       break;
     case CMD_MP3_NEXT:
       trackNo = (trackNo+1) % noOfTracks;
-      DBG_PRINT(F("Switching to track "));
-      DBG_PRINTLN(trackNo);
+      // DBG_PRINT(F("Switching to track "));
+      // DBG_PRINTLN(trackNo);
       if ( player.isPlaying() ) {
         player.stopTrack();
         delay(100);
@@ -234,8 +234,8 @@ void executeCmd() {
       }
       break;
     case CMD_MP3_PREV:
-      DBG_PRINT(F("Switching to track "));
-      DBG_PRINTLN(trackNo);
+      // DBG_PRINT(F("Switching to track "));
+      // DBG_PRINTLN(trackNo);
       trackNo = (trackNo-1) % noOfTracks;
       while ( trackNo <0 ) trackNo = trackNo + noOfTracks;
       if ( player.isPlaying() ) {

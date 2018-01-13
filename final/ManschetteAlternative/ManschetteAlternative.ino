@@ -37,6 +37,7 @@ byte zaehler = 0;
 bool alarm = false;           // A flag indicating wether an alarm should be given if motion is detected by the back sensor
 bool prepareAlarm = false;    // A flag indicating wether has to be activated if the back sensor detects no motion 
 byte motionThreshold = 1;     // Number of subsequent intervals of motion after which the coat wakes up or starts an alarm
+volatile long alarmDelay;
 
 bool measuringPulse = false;  // Various values for measuring the pulse
 
@@ -126,7 +127,8 @@ void loop() {
   }
   
   // Activate alarm
-  if ( prepareAlarm && !backPirActivity ) {
+  if ( prepareAlarm && ( millis() - alarmDelay > 5000 ) ) {
+  // if ( prepareAlarm && !backPirActivity ) {
     prepareAlarm = false;
     alarm = true;
   }
@@ -229,9 +231,10 @@ void loop() {
             alarm = false;
             prepareAlarm = ( data[0] != 0 );
             if ( prepareAlarm ) {
-              debugSerial.println(F("Alarm activated"));
+               alarmDelay = millis();
+               debugSerial.println(F("Alarm activated"));
             } else {
-              debugSerial.println(F("Alarm deactivated"));
+               debugSerial.println(F("Alarm deactivated"));
             }
             break;
           case CMD_ALARM_END:
@@ -478,7 +481,7 @@ void goToSleep(bool deep) {
  * Check both PIRS for activity in the last perios of time
  */
 bool getPirActivity() {
-  Serial.println(F("Checking pir activity"));
+  // Serial.println(F("Checking pir activity"));
   
   bool active = getFrontPirActivity();
   active = active || getBackPirActivity();
@@ -497,7 +500,7 @@ bool getFrontPirActivity() {
   b = mantel.readByteFromSlave(ID_PIR_FRONT);
   active = active || ( b >= motionThreshold );
 
-  if (b != 0) debugSerial.println(F("Front PIR activity detected"));
+  // if (b != 0) debugSerial.println(F("Front PIR activity detected"));
 
   return active;
 }
@@ -514,7 +517,7 @@ bool getBackPirActivity() {
   b = mantel.readByteFromSlave(ID_PIR_BACK);
   active = active || ( b >= motionThreshold );
   
-  if (active) debugSerial.println(F("Back PIR activity detected"));
+  // if (active) debugSerial.println(F("Back PIR activity detected"));
 
   return active;
 }
