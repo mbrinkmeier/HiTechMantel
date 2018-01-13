@@ -179,9 +179,9 @@ void receiveEvent() {
       int sec = 256 * hi + lo;
       interval = 1000l*sec;
       motions = 0;
-      Serial.print("Interval set to ");
-      Serial.println(interval);
-      Serial.flush();
+      // Serial.print("Interval set to ");
+      // Serial.println(interval);
+      // Serial.flush();
       break;
   }
   mantel.emptyWire();

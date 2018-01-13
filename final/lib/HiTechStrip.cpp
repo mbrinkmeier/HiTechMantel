@@ -255,8 +255,8 @@ void HiTechStrip::setSpeed(byte speed) {
       frameDelay = map(speed,0,255,500,10);
       break;
   }
-  Serial.print("Delay set to ");
-  Serial.println(frameDelay);
+  // Serial.print("Delay set to ");
+  // Serial.println(frameDelay);
 }
 
 
@@ -375,13 +375,13 @@ void handleStripMsg(int numBytes) {
 
   STRIP->mantel->readData(dlen,data);
 
-  debugSerial.print(F("Received cmd: "));
-  debugSerial.print(cmd);
-  debugSerial.print(F(" dlen: "));
-  debugSerial.print(dlen);
-  debugSerial.print(F(" "));
-  STRIP->mantel->debugData(data,dlen);
-  debugSerial.println();
+  // debugSerial.print(F("Received cmd: "));
+  // debugSerial.print(cmd);
+  // debugSerial.print(F(" dlen: "));
+  // debugSerial.print(dlen);
+  // debugSerial.print(F(" "));
+  // STRIP->mantel->debugData(data,dlen);
+  // debugSerial.println();
 
   switch (cmd) {
     case CMD_STRIP_RESET:

@@ -28,6 +28,10 @@
 int id = ID_MOTOR;
 unsigned long motor_start;
 
+volatile boolean motorUp;
+volatile boolean motorDown;
+volatile boolean motorStop;
+
 HiTechMantel mantel = HiTechMantel();
 Adafruit_NeoPixel pixel = mantel.pixel;
 
@@ -50,6 +54,10 @@ void setup() {
 
   Serial.print("Listening on I2C with ID ");
   Serial.println(id);
+
+  motorUp = false;
+  motorDown = false;
+  motorStop = false;
 }
 
 
@@ -57,6 +65,23 @@ void setup() {
  * The main loop does nothing.
  */
 void loop() {
+  if ( motorUp ) {
+    motorUp = false;
+    servo.write(90-MOTOR_SPEED);
+    motor_start = millis();    
+  }
+
+  if ( motorDown ) {
+    motorDown = false;
+    servo.write(90+MOTOR_SPEED);
+    motor_start = millis();        
+  }
+
+  if ( motorStop ) {
+    motorStop = false;
+    servo.write(90);
+  }
+  
   if ( millis() - motor_start > MOTOR_DUR ) {
     Serial.println("Stopping Motor due to timeout");
     servo.write(90);
@@ -77,31 +102,33 @@ void receiveEvent(int numBytes) {
   cmd = mantel.readFromWire();
   dlen = mantel.readFromWire();
 
-  Serial.print("Received cmd: ");
-  Serial.print(cmd);
-  Serial.print(" dlen: ");
-  Serial.println(dlen);
+  // Serial.print("Received cmd: ");
+  // Serial.print(cmd);
+  //Serial.print(" dlen: ");
+  // Serial.println(dlen);
 
   mantel.readData(dlen,data);
   
   switch (cmd) {
    case CMD_MOTOR_STOP:
-      servo.write(90);
+      motorStop = true;
+      // servo.write(90);
       break;
     case CMD_MOTOR_UP:
-      servo.write(90-MOTOR_SPEED);
-      motor_start = millis();
+      motorUp = true;
+      // servo.write(90-MOTOR_SPEED);
+      // motor_start = millis();
       break;
     case CMD_MOTOR_DOWN:
-      servo.write(90+MOTOR_SPEED);
-      motor_start = millis();
+      motorDown = true;
+      // servo.write(90+MOTOR_SPEED);
+      // motor_start = millis();
       break;
    case CMD_PING:
-      Wire.onRequest(waitForPing);
+      // Wire.onRequest(waitForPing);
       break;
   }
   mantel.emptyWire();
-  
 }
 
 

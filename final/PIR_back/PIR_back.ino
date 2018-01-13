@@ -160,13 +160,12 @@ void receiveEvent() {
   dlen = mantel.readFromWire();
   mantel.readData(dlen,data);
 
-  Serial.print("Received cmd: ");
-  Serial.print(cmd);
-  Serial.print(" dlen: ");
-  Serial.println(dlen);
-  mantel.debugData(data,dlen);
-  Serial.flush();
-
+  // Serial.print("Received cmd: ");
+  // Serial.print(cmd);
+  // Serial.print(" dlen: ");
+  // Serial.println(dlen);
+  // mantel.debugData(data,dlen);
+  // Serial.flush();
 
   switch (cmd) {
     case CMD_PIR_RESET:
@@ -179,9 +178,9 @@ void receiveEvent() {
       int sec = 256 * hi + lo;
       interval = 1000l*sec;
       motions = 0;
-      Serial.print("Interval set to ");
-      Serial.println(interval);
-      Serial.flush();
+      // Serial.print("Interval set to ");
+      // Serial.println(interval);
+      // Serial.flush();
       break;
   }
   mantel.emptyWire();

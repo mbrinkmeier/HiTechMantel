@@ -158,12 +158,12 @@ void handleMsg(int numBytes) {
 
   mantel.readData(dlen,data);
     
-  debugSerial.print(F("Received cmd: "));
-  debugSerial.print(cmd);
-  debugSerial.print(F(" dlen: "));
-  debugSerial.println(dlen);
-  mantel.debugData(data,dlen);
-  debugSerial.println();
+  // debugSerial.print(F("Received cmd: "));
+  // debugSerial.print(cmd);
+  // debugSerial.print(F(" dlen: "));
+  // debugSerial.println(dlen);
+  // mantel.debugData(data,dlen);
+  // debugSerial.println();
   
   switch (cmd) {
     case CMD_MATRIX_RESET:
@@ -282,8 +282,8 @@ void initAniText(byte data[], int dlen) {
     aniText = aniText + (char) data[i+3];
   }
 
-  debugSerial.print("text :");
-  debugSerial.println(aniText);
+  // debugSerial.print("text :");
+  // debugSerial.println(aniText);
 }
 
 
@@ -565,7 +565,7 @@ void setSpeed(int speed) {
     default:
       frameDelay = map(aniSpeed,0,255,500,5);
   }
-  Serial.print(F("Set frame delay to "));
-  Serial.print(frameDelay);
-  Serial.println(F(" ms"));
+  // Serial.print(F("Set frame delay to "));
+  // Serial.print(frameDelay);
+  // Serial.println(F(" ms"));
 }

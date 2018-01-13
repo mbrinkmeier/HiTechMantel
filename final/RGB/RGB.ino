@@ -28,17 +28,17 @@
 #define PIXEL_PIN 10
 
 // The id of the flora
-// int id = ID_BACK;
+int id = ID_BACK;
 // int id = ID_BELT;
-int id = ID_ARM;
+// int id = ID_ARM;
 
 bool debugging = true;
 
-int red = 0;
-int green = 0;
-int blue = 0;
+volatile int red = 0;
+volatile int green = 0;
+volatile int blue = 0;
 
-bool colorChanged = false;
+volatile bool colorChanged = false;
 
 HiTechMantel mantel = HiTechMantel();
 
@@ -99,12 +99,12 @@ void receiveEvent(int numBytes) {
   mantel.readData(dlen,data);
   mantel.emptyWire();
 
-  DBG_PRINT(F("Received cmd: "));
-  DBG_PRINT(cmd);
-  DBG_PRINT(F(" dlen: "));
-  DBG_PRINT(dlen);
-  if (debugging) mantel.debugData(data,dlen);
-  DBG_PRINTLN("");
+  // DBG_PRINT(F("Received cmd: "));
+  // DBG_PRINT(cmd);
+  // DBG_PRINT(F(" dlen: "));
+  // DBG_PRINT(dlen);
+  // if (debugging) mantel.debugData(data,dlen);
+  // DBG_PRINTLN("");
   
   switch (cmd) {
     case CMD_SELFTEST:
@@ -125,7 +125,7 @@ void receiveEvent(int numBytes) {
       blue = data[2];
       colorChanged = true;
       break;
-   case CMD_RGB_RED:
+    case CMD_RGB_RED:
       red = data[0];
       colorChanged = true;
       break;
@@ -138,13 +138,10 @@ void receiveEvent(int numBytes) {
       colorChanged = true;
       break;
    case CMD_PING:
-      Wire.onRequest(waitForPing);
+      // Wire.onRequest(waitForPing);
       break;
   }
 }
-
-
-
 
 /**
  * Wait for the ping request.

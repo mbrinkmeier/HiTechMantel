@@ -60,8 +60,8 @@ void HiTechMantel::writeByteToSlave(byte id, byte data) {
 
 
 void HiTechMantel::writeByteToSlave(byte id, byte cmd, byte data) {
-  Serial.print("Writing ");
-  Serial.println(data);
+  // Serial.print("Writing ");
+  // Serial.println(data);
   Wire.beginTransmission(id);
   Wire.write(cmd);
   Wire.write(1);
