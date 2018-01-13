@@ -377,7 +377,7 @@ void measurePulse() {
   // int pulseValue = map(pulseRaw,pulseMid/2,2*pulseMid,0,255);
   int amp = (pulseMaxView - pulseMinView);
   int center = (pulseMaxView + pulseMinView)/2;
-  int pulseValue = map(pulseRaw,center-3*amp/2,center+3*amp/2,0,255);
+  int pulseValue = map(pulseRaw,center-2*amp,center+2*amp,0,255);
 
   screenSerial.print("pulseText.txt=\"");
   screenSerial.print(pulseBPM);
