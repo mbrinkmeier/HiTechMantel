@@ -25,7 +25,7 @@ extern void doAniOwn(HiTechStrip *strip, int frame);
 
 HiTechStrip::HiTechStrip() {
   mantel = new HiTechMantel();
-  strip = new Adafruit_NeoPixel(LEN, PIN,  NEO_GRB + NEO_KHZ800);
+  strip = new Adafruit_NeoPixel(LEN, PIN, NEO_GRB + NEO_KHZ800);
   STRIP = this;
 }
 
@@ -39,6 +39,8 @@ void HiTechStrip::setup() {
   Wire.onReceive(handleStripMsg);
 
   strip->begin();
+
+  clearStrip();
 
   // debugSerial.print("Running selftest ... ");
   // selftest();
@@ -82,6 +84,7 @@ void HiTechStrip::loop() {
     strip->show();
     delay(SHOW_DELAY);
   }
+
 }
 
 
@@ -267,10 +270,10 @@ void HiTechStrip::setColor(int led, long color) {
   color = color / 256;
   byte red = color % 256;
   strip->setPixelColor(led,red,green,blue);
-  if ( led == 0 ) {
-    mantel->pixel.setPixelColor(0,red,green,blue);
-    mantel->pixel.show();
-  }
+  // if ( led == 0 ) {
+  //  mantel->pixel.setPixelColor(0,red,green,blue);
+  //  mantel->pixel.show();
+  // }
 }
 
 void HiTechStrip::clearStrip() {
@@ -341,9 +344,10 @@ long HiTechStrip::runningPixels(int pos, int frame, int start, int len, long col
   int fak = 1;
   if ( reverse ) fak = -1;
 
-  int led = (LEN + start + fak * frame) % LEN;
-
-  int idx = pos - led;
+  int led = (start + fak * frame) % LEN;
+  while ( led < 0 ) led += LEN;
+  
+  int idx = (led - pos + LEN) % LEN;
   if ( (idx >= 0) && (idx < len) ) return color[idx];
 
   return 0;
@@ -353,9 +357,11 @@ long HiTechStrip::runningRainbow(int pos, int frame, int start, int len, boolean
   int fak = 1;
   if ( reverse ) fak = -1;
 
-  int led = (LEN + start + fak * frame) % LEN;
+  // Index of first
+  int led = (start + fak * frame) % LEN;
+  while ( led < 0 ) led += LEN;
 
-  int idx = pos - led;
+  int idx = (led - pos + LEN) % LEN;
   if ( (idx >= 0) && (idx < len) ) return colorToLong(mantel->rainbowRed(idx,len/6),
      mantel->rainbowGreen(idx,len/6),mantel->rainbowBlue(idx,len/6));
 
@@ -385,7 +391,7 @@ void handleStripMsg(int numBytes) {
   STRIP->mantel->debugData(data,dlen);
   debugSerial.println();
   */
-  
+
   switch (cmd) {
     case CMD_STRIP_RESET:
       STRIP->colRed = 0;
