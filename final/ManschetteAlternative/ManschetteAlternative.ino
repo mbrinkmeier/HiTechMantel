@@ -23,6 +23,8 @@
 #define PULSE_PIN A10
 #define PULSE_AVG_COUNT 10
 
+#define TIMEOUT 1000  // Time in ms till I"C times out
+#define LOOPDELAY 5   // Time in ms added as delay at the end of loop()
 #define SLEEPTIME 300000 // 5 min till sleep
 #define DEEPSLEEPTIME  420000 // 7 min till deep sleep
 
@@ -98,7 +100,7 @@ void setup() {
   
   // Initialize I2C as master
   I2c.begin();
-  I2c.timeOut(1000);
+  I2c.timeOut(TIMEOUT);
 
   // Initialize serial connections
   debugSerial.println(F("Init done"));
@@ -171,6 +173,11 @@ void loop() {
     id = mantel.readByteFromScreen();
     cmd = mantel.readByteFromScreen();
     dlen = mantel.readByteFromScreen();
+    mantel.readBytesFromScreen(data,dlen);
+
+    // debug Output
+    debugSerial.println(F("Received command from screen"));
+    // mantel.emptyWire();
 
     debugSerial.print("id: ");
     debugSerial.print(id);
@@ -178,13 +185,6 @@ void loop() {
     debugSerial.print(cmd);
     debugSerial.print(" dlen: ");
     debugSerial.println(dlen);
-
-    mantel.readBytesFromScreen(data,dlen);
-
-    // debug Output
-    debugSerial.println(F("Received command from screen"));
-    mantel.emptyWire();
-
     mantel.debugData(data,dlen);
     debugSerial.println();
 
@@ -281,7 +281,7 @@ void loop() {
     goToSleep(false);
   }
  
-  delay(5); 
+  delay(LOOPDELAY); 
 }
 
 

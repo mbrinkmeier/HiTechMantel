@@ -52,6 +52,7 @@ volatile int frameCount;   // Counts the current frame
 volatile int colRed = 0;
 volatile int colGreen = 0;
 volatile int colBlue = 100;
+volatile byte data[255];
 
 unsigned long lastFrame;
 String aniText;
@@ -155,7 +156,6 @@ void loop() {
 void handleMsg(int numBytes) {
   byte cmd = mantel.readFromWire();
   byte dlen = mantel.readFromWire();
-  byte data[255];
   mantel.readData(dlen,data);
   mantel.emptyWire();
     

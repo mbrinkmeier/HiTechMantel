@@ -46,6 +46,7 @@ class HiTechStrip {
     volatile unsigned long lastFrame;
     volatile bool colChanged = false;
     volatile long colors[30];
+    volatile byte data[255];
 
     HiTechStrip();
 
