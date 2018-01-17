@@ -462,6 +462,7 @@ void initAniWindmill() {
   frameCount = 0;
   aniText = "";
   setSpeed(aniSpeed);
+  colChanged=true;
 }
 
 

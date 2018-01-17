@@ -208,7 +208,7 @@ void loop() {
             pulseSecondBeat = false;
             measuringPulse = true;
             pulseIBI = 0;
-            pulseBPM = 0;
+            pulseBPM = 60;
             pulseOldBPM = 0;
             pulseShowing = true;
             pulseLastSend = 0;
