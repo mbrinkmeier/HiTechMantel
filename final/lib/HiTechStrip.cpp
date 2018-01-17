@@ -374,17 +374,24 @@ void handleStripMsg(int numBytes) {
   byte data[255];
 
   STRIP->mantel->readData(dlen,data);
+  STRIP->mantel->emptyWire();
 
-  // debugSerial.print(F("Received cmd: "));
-  // debugSerial.print(cmd);
-  // debugSerial.print(F(" dlen: "));
-  // debugSerial.print(dlen);
-  // debugSerial.print(F(" "));
-  // STRIP->mantel->debugData(data,dlen);
-  // debugSerial.println();
-
+  /*
+  debugSerial.print(F("Received cmd: "));
+  debugSerial.print(cmd);
+  debugSerial.print(F(" dlen: "));
+  debugSerial.print(dlen);
+  debugSerial.print(F(" "));
+  STRIP->mantel->debugData(data,dlen);
+  debugSerial.println();
+  */
+  
   switch (cmd) {
     case CMD_STRIP_RESET:
+      STRIP->colRed = 0;
+      STRIP->colGreen = 0;
+      STRIP->colBlue = 0;
+      STRIP->colChanged = true;
       STRIP->initAniColor(0,0,0);
       break;
     case CMD_STRIP_COLOR:
@@ -419,6 +426,4 @@ void handleStripMsg(int numBytes) {
       STRIP->initAniRunning();
       break;
   }
-  // empty buffer
-  while (Wire.available()) Wire.read();
 }

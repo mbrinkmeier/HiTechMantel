@@ -36,16 +36,16 @@ class HiTechStrip {
     Adafruit_NeoPixel* strip;
     HiTechMantel *mantel;
 
-    int frameAni;     // The id of the animation
-    int frameDelay;   // The time between two frames
-    int frameNumber;  // The number of frames for the current animation
-    int frameCount;   // Counts the current frame
-    int colRed;
-    int colGreen;
-    int colBlue;
-    unsigned long lastFrame;
-    bool colChanged = false;
-    long colors[30];
+    volatile int frameAni;     // The id of the animation
+    volatile int frameDelay;   // The time between two frames
+    volatile int frameNumber;  // The number of frames for the current animation
+    volatile int frameCount;   // Counts the current frame
+    volatile int colRed;
+    volatile int colGreen;
+    volatile int colBlue;
+    volatile unsigned long lastFrame;
+    volatile bool colChanged = false;
+    volatile long colors[30];
 
     HiTechStrip();
 

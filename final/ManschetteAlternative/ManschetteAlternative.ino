@@ -45,8 +45,9 @@ int pulseMin;                  // The minimal sample
 int pulseMax;                  // The maximal sample
 int pulseMid;                  // The medium value
 unsigned long pulseTick;       // pulse tick
-unsigned long pulseLAstSample; // pulse tick
+unsigned long pulseLastSample; // pulse tick
 unsigned long pulseLastBeat;   // pulse tick
+unsigned long pulseLastSend;   // Time at which the last bpm was send to the heart matrix
 int pulseRate[10];             // Array to save the pulse rates
 int pulseRateIdx;              // Index for the next rate
 int pulseRateSum;                  // The sum of all current rates
@@ -118,8 +119,14 @@ void setup() {
 void loop() {
   byte start, id, cmd, dlen;
 
-  bool backPirActivity = getBackPirActivity();
-  bool frontPirActivity = getFrontPirActivity();
+  bool backPirActivity = true;
+  bool frontPirActivity = true;
+
+  if ( alarm || sleeping ) {
+    backPirActivity = getBackPirActivity();
+    frontPirActivity = getFrontPirActivity();
+  }
+
   
   // Check for alarm
   if (alarm &&  backPirActivity ) {
@@ -204,6 +211,7 @@ void loop() {
             pulseBPM = 0;
             pulseOldBPM = 0;
             pulseShowing = true;
+            pulseLastSend = 0;
             mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_PULSE,pulseBPM);              
             for (int i = 0 ; i < 10; i++) {
               pulseRate[i] = 0;
@@ -404,9 +412,10 @@ void measurePulse() {
   screenSerial.write(0xff);
 
   
-  if ( (pulseShowing) && ( pulseBPM != pulseOldBPM ) ) {
+  if ( (pulseShowing) && ( pulseBPM != pulseOldBPM ) && ( now - pulseLastSend > 10000 ) ) {
     pulseOldBPM = pulseBPM;
     mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_SPEED,pulseBPM);
+    pulseLastSend = now;
   }
 }
 

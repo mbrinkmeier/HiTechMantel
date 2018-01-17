@@ -45,17 +45,17 @@
 #define ANI_WAVE 8
 
 
-int frameAni;     // The id of the animation
-int frameDelay;   // The time between two frames
-int frameNumber;  // The number of frames for the current animation
-int frameCount;   // Counts the current frame
-int colRed = 0;
-int colGreen = 0;
-int colBlue = 100;
+volatile int frameAni;     // The id of the animation
+volatile int frameDelay;   // The time between two frames
+volatile int frameNumber;  // The number of frames for the current animation
+volatile int frameCount;   // Counts the current frame
+volatile int colRed = 0;
+volatile int colGreen = 0;
+volatile int colBlue = 100;
 
 unsigned long lastFrame;
 String aniText;
-int aniSpeed;
+volatile int aniSpeed;
 bool colChanged = false;
 
 HiTechMantel mantel = HiTechMantel();
@@ -67,7 +67,7 @@ Adafruit_NeoMatrix matrix = Adafruit_NeoMatrix(8, 8, DATA_PIN,
   NEO_MATRIX_COLUMNS + NEO_MATRIX_PROGRESSIVE,
   NEO_GRBW            + NEO_KHZ800);
 
-char heart_rate = 0;
+// char heart_rate = 0;
 unsigned long last_tick = 0;
 
 void (*hardReset)(void) = 0;
@@ -109,6 +109,7 @@ void setup() {
  */
 void loop() {
   long time = millis();
+  
   if ( (colChanged) || ((time - lastFrame > frameDelay) && (frameDelay > 0)) ) {
     switch ( frameAni ) {
       case ANI_TEXT:
@@ -155,8 +156,8 @@ void handleMsg(int numBytes) {
   byte cmd = mantel.readFromWire();
   byte dlen = mantel.readFromWire();
   byte data[255];
-
   mantel.readData(dlen,data);
+  mantel.emptyWire();
     
   // debugSerial.print(F("Received cmd: "));
   // debugSerial.print(cmd);
@@ -212,8 +213,6 @@ void handleMsg(int numBytes) {
       hardReset();
       break;
   }
-  // empty buffer
-  while (Wire.available()) Wire.read();
 }
 
 
@@ -312,6 +311,7 @@ void initAniPulse() {
   if ( (colRed == 0) && ( colGreen == 0) && (colBlue == 0) ) {
     colRed = 127;
   }
+  colChanged = true;
   setSpeed(70);
 }
 
