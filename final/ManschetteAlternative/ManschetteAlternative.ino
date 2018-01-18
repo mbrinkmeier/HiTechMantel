@@ -211,8 +211,10 @@ void loop() {
             pulseBPM = 60;
             pulseOldBPM = 0;
             pulseShowing = true;
-            pulseLastSend = 0;
-            mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_PULSE,pulseBPM);              
+            pulseLastSend = millis();
+            mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_PULSE);              
+            mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_PULSE);              
+            mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_SPEED,pulseBPM);
             for (int i = 0 ; i < 10; i++) {
               pulseRate[i] = 0;
               pulseSample[i] = 0;
@@ -412,7 +414,7 @@ void measurePulse() {
   screenSerial.write(0xff);
 
   
-  if ( (pulseShowing) && ( pulseBPM != pulseOldBPM ) && ( now - pulseLastSend > 10000 ) ) {
+  if ( (pulseShowing) && ( pulseBPM != pulseOldBPM ) && ( now - pulseLastSend > 5000 ) ) {
     pulseOldBPM = pulseBPM;
     mantel.writeByteToSlave(ID_MATRIX,CMD_MATRIX_SPEED,pulseBPM);
     pulseLastSend = now;
