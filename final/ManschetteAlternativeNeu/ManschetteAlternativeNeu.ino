@@ -509,9 +509,10 @@ void goToSleep(bool deep) {
   mantel.writeByteToSlave(ID_STRIP,CMD_STRIP_RED,0);
   mantel.writeByteToSlave(ID_STRIP,CMD_STRIP_GREEN,0);
   mantel.writeByteToSlave(ID_STRIP,CMD_STRIP_BLUE,0);
-  mantel.writeByteToSlave(ID_STRIP,0);
+  // mantel.writeByteToSlave(ID_STRIP,0);
   mantel.writeByteToSlave(ID_MATRIX,0);
-  // mantel.writeByteToSlave(ID_MP3,CMD_MP3_VOL_SET,0);
+  mantel.writeByteToSlave(ID_MP3,CMD_MP3_VOL_SET,0);
+  mantel.writeByteToSlave(ID_MP3,CMD_MP3_STOP);
   mantel.writeByteToSlave(ID_MOTOR,0);
 }
 

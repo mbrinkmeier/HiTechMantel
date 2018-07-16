@@ -1,6 +1,9 @@
+/**
+ * Uno SDA: A4, SCL: A5
+ */
 #include <Wire.h>
 
-#define ID 7
+int ID = 1;
 
 int led = 7;
 byte zaehler = 0;
@@ -27,15 +30,16 @@ void loop() {
 void receiveEvent(int howMany) {
  
   if (Wire.available()) {
-    int x = Wire.read();    // receive byte as an integer
-    Serial.println(x);
-    if(x%2 == 0) {
-      digitalWrite(led, LOW);
-    } else if(x%2 == 1) {
-      digitalWrite(led, HIGH);
-    }
+    // int x = Wire.read();    // receive byte as an integer
+    // Serial.println(x);
+    // if(x%2 == 0) {
+    //   digitalWrite(led, LOW);
+    // } else if(x%2 == 1) {
+    //   digitalWrite(led, HIGH);
+    // }
     while ( Wire.available() ) {
-      Serial.print((char) Wire.read());
+      Serial.print((int) Wire.read(),DEC);
+      Serial.print(" ");
     }
     Serial.println();
   }

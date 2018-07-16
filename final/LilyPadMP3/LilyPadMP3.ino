@@ -20,17 +20,18 @@
 
 #include <Wire.h>
 #include <HiTechMantel.h>
-#include <SPI.h>            // To talk to the SD cars and MP3 schip
+#include <SPI.h>            // To talk to the SD cars and MP3 chip
 #include <SdFat.h>          // SD card file system
 #include <SFEMP3Shield.h>   // MP3 decoder chip
 
 #ifndef PSTR
-  #define PSTR // Make Arduino Due happy
+#define PSTR // Make Arduino Due happy
 #endif
 
 #define EN_GPIO1 A2
 #define SD_CS 9
 #define NO_CMD 255
+#define MAX_VOL 30  // The lower, the louder
 
 HiTechMantel mantel = HiTechMantel();
 
@@ -44,7 +45,7 @@ int trackNo;
 int noOfTracks;
 bool playing;
 
-bool debugging = false;
+bool debugging = true;
 
 volatile byte cmd;
 volatile byte dlen;
@@ -57,7 +58,7 @@ void setup() {
   SdFile file;
   char tempfilename[13];
   
-  debugSerial.begin(9600);
+  debugSerial.begin(115200);
 
   Wire.begin(ID_MP3);
   Wire.onReceive(handleMsg);
@@ -115,7 +116,7 @@ void setup() {
   }
   
   // Set initial volume
-  player.setVolume(1,1);
+  player.setVolume(MAX_VOL,MAX_VOL);
 
   // Turn on amplifier
   digitalWrite(EN_GPIO1,HIGH);
@@ -216,7 +217,7 @@ void executeCmd() {
     case CMD_MP3_VOL_DOWN:
       break;
     case CMD_MP3_VOL_SET:
-      vol = map(data[0],0,100,65,0);
+      vol = map(data[0],0,100,65,MAX_VOL);
       // data[0] = 65 - (65*data[0])/255;
       // if ( data[0] >= 65 ) data[0] = 255;
       // DBG_PRINT(F("Setting volume to "));

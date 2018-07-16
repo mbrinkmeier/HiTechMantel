@@ -28,8 +28,8 @@
 #define PIXEL_PIN 10
 
 // The id of the flora
-int id = ID_BACK;
-// int id = ID_BELT;
+// int id = ID_BACK;
+int id = ID_BELT;
 // int id = ID_ARM;
 
 bool debugging = true;

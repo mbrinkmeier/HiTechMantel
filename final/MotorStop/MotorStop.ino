@@ -24,7 +24,7 @@
 #define MOTOR_PIN 10
 #define MOTOR_SPEED 20
 #define MOTOR_DUR_UP 4000
-#define MOTOR_DUR_DOWN 3800
+#define MOTOR_DUR_DOWN 4000
 #define MOTOR_DUR_ADMIN 100
 
 // The id of the flora
