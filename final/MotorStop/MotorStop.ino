@@ -33,6 +33,16 @@ unsigned long motor_start;
 int state;
 boolean deactivated;
 
+// FEEDBACK settings
+#define FEEDBACK true
+#define FB_UNITS 72
+#define FB_THRESHOLD 60
+#define FB_PIN 12
+#define FB_BASE_POS 0
+#define FB_TURNS 6
+#define FB_DC_MIN 0.029
+#define FB_DC_MAX 0.971
+
 // Signals
 volatile boolean motorUp;
 volatile boolean motorDown;
@@ -95,8 +105,15 @@ void setup() {
      servo.write(90);
   }
 
-  Serial.flush();
-  
+  if ( FEEDBACK ) {
+    pinMode(FB_PIN,INPUT);
+    Serial.println("Running in FEEDBACK MODE");
+    Serial.print("Setting motor to base position ... ");
+    Serial.flush();  
+    moveTo(FB_BASE_POS,5);
+    Serial.println("reached");
+  }
+  Serial.flush();  
 }
 
 
@@ -130,23 +147,45 @@ void loop() {
   if ( adminLine.equalsIgnoreCase("HELP") ) {
     showAdminHelp();
   }
-  
-  switch (state) {
-    case STATE_UP:
-      if ( !deactivated ) handleUp(adminLine);
-      break;
-    case STATE_DOWN:
-      if ( !deactivated ) handleDown(adminLine);
-      break;
-    case STATE_RUNNING_UP:
-      if ( !deactivated ) handleRunningUp();
-      break;
-    case STATE_RUNNING_DOWN:
-      if ( !deactivated ) handleRunningDown();
-      break;
-    case STATE_ADMIN:
-      handleAdmin(adminLine);
-      break;
+
+  if (!FEEDBACK) {
+    // Call the handler for the current state
+    switch (state) {
+      case STATE_UP:
+        if ( !deactivated ) handleUp(adminLine);
+        break;
+      case STATE_DOWN:
+        if ( !deactivated ) handleDown(adminLine);
+        break;
+      case STATE_RUNNING_UP:
+        if ( !deactivated ) handleRunningUp();
+        break;
+      case STATE_RUNNING_DOWN:
+        if ( !deactivated ) handleRunningDown();
+        break;
+      case STATE_ADMIN:
+        handleAdmin(adminLine);
+        break;
+    }
+  } else {
+    // Call the handler for the current state
+    switch (state) {
+      case STATE_UP:
+        if ( !deactivated ) handleUpFeedback(adminLine);
+        break;
+      case STATE_DOWN:
+        if ( !deactivated ) handleDownFeedback(adminLine);
+        break;
+      case STATE_RUNNING_UP:
+        if ( !deactivated ) handleRunningUpFeedback();
+        break;
+      case STATE_RUNNING_DOWN:
+        if ( !deactivated ) handleRunningDownFeedback();
+        break;
+      case STATE_ADMIN:
+        handleAdminFeedback(adminLine);
+        break;
+    }    
   }
 }
 
@@ -249,6 +288,8 @@ void handleRunningDown() {
   }
 }
 
+
+
 // Show the admin commands
 void showAdminHelp() {
   Serial.println();
@@ -261,6 +302,8 @@ void showAdminHelp() {
   Serial.println(F("set down : Beende Admin Modus und markiere als untere Position"));
   Serial.println(F("deact    : Beende Admin Modus mit deaktivierem Motor"));
   Serial.println();
+  if ( FEEDBACK ) Serial.println("FEEDBACK MODE");  
+  Serial.println();
   Serial.flush();
 }
 
@@ -270,6 +313,8 @@ void printState() {
     Serial.println(F("DEAKTIVIERT!"));
     return;
   }
+
+  if ( FEEDBACK ) Serial.println("FEEDBACK MODE");
   
   Serial.print(F("Aktueller Zustand: "));
   switch (state) {
@@ -327,4 +372,227 @@ void receiveEvent(int numBytes) {
   mantel.emptyWire();
 }
 
+/**
+ * Feedback operations
+ */
+
+
+/**
+ * Get the current degree of the servo
+ */
+int getDegree() {
+   int tHigh;
+   int tLow;
+   int tCycle;
+
+   float theta = 0;
+   float dc = 0;
+   float dutyScale = 1;
+
+   while(1) {
+     pulseIn(FB_PIN, LOW);
+     tHigh = pulseIn(FB_PIN, HIGH);
+     tLow =  pulseIn(FB_PIN, LOW);
+     tCycle = tHigh + tLow;
+     if ( (tCycle > 1000) && ( tCycle < 1200)) break;
+   } 
+
+   dc = (dutyScale * tHigh) / tCycle;
+   theta = ((dc - FB_DC_MIN) * FB_UNITS ) / (FB_DC_MAX - FB_DC_MIN);
+   return theta;  
+}
+
+/**
+ * Move to the target position. Choose the shorter direction
+ */
+void moveTo(int target, int speed) {
+  int pos = getDegree();
+  int delta = pos - target; // number of degrees in clockwise direction
+  
+  Serial.print(pos);
+  Serial.print(" ");
+  Serial.print(target);
+  Serial.print(" ");
+  Serial.println(delta);
+  Serial.flush();
+
+  
+  if (delta > FB_UNITS/2) {
+    // counterclockwise is shorter
+    delta = delta - FB_UNITS;
+  } else if ( delta < - (FB_UNITS/2)) {
+    // clockwise is shorter
+    delta = FB_UNITS + delta;
+  }
+  Serial.println(delta);
+  Serial.flush();
+  
+  if ( delta > 0 ) { // clockwise
+    servo.write(90 + speed);      
+  } else { // counterclockwise
+    servo.write(90 - speed);           
+  }
+
+  int theta;
+  while ( (theta = getDegree()) != target ) {
+  }
+  servo.write(90);  
+  delay(50);
+}
+
+
+
+void clockwise(int ticks, int speed) {
+  int curSpeed = speed;
+  int remain = ticks;
+  int oldValue = getDegree();
+  oldValue = getDegree();
+  int target = (oldValue + ticks) % FB_UNITS; 
+  int newValue;
+  int delta;
+
+  while ( remain > 1 ) {
+    servo.write(90 - curSpeed);
+    newValue = getDegree();
+    delta = newValue - oldValue;
+    oldValue = newValue;
+    if ( delta < - FB_THRESHOLD ) {
+      delta += FB_UNITS;
+    }
+
+    if ( delta > ( (1.0 * remain) / 20.0 ) ) {
+      curSpeed = (3 * curSpeed) / 5;
+      if (curSpeed < 10) curSpeed = 10;
+    }
+
+    remain = remain - delta;
+  }
+  
+  servo.write(90);
+  delay(50);
+}
+
+
+void counterclockwise(int ticks, int speed) {
+  int curSpeed = speed;
+  int remain = ticks;
+  int oldValue = getDegree();
+  int target = (oldValue - ticks) % FB_UNITS;
+  while ( target < 0 ) target += FB_UNITS; 
+  oldValue = getDegree();
+  int newValue;
+  int delta;
+
+  while ( remain > 1 ) {
+    servo.write(90 + curSpeed);
+    newValue = getDegree();
+    delta = oldValue - newValue;
+    oldValue = newValue;
+    if ( delta < - FB_THRESHOLD ) {
+      delta += FB_UNITS;
+    }
+
+    if ( delta > ((1.0 * remain) / 20.0 ) ) {
+      curSpeed = (3 * curSpeed) / 5;
+      if (curSpeed < 10) curSpeed = 10;
+    }
+
+    remain = remain - delta;
+  }
+
+  servo.write(90);
+  delay(50);
+}
+
+
+
+// Handle STATE_ADMIN in feedback mode
+void handleAdminFeedback(String command) {
+  
+  if ( command.equalsIgnoreCase("set up") ) {
+    servo.write(90);
+    deactivated = false;
+    EEPROM.put(deactAddress,false);
+    EEPROM.put(isUpAddress,STATE_UP);
+    state = STATE_UP;
+    printState();
+  } else if ( command.equalsIgnoreCase("set down") ) {
+    servo.write(90);
+    deactivated = false;
+    EEPROM.put(deactAddress,false);
+    EEPROM.put(isUpAddress,STATE_DOWN);
+    state = STATE_DOWN;    
+    printState();
+  } else if ( command.equalsIgnoreCase("stop") ) {
+    servo.write(90);    
+    printState();
+  } else if ( command.equalsIgnoreCase("up") ) {
+    // One turn up
+    clockwise(1*FB_UNITS,MOTOR_SPEED);
+    moveTo(FB_BASE_POS,5);
+    printState();
+  } else if ( command.equalsIgnoreCase("down") ) {
+    // One turn down
+    counterclockwise(1*FB_UNITS,MOTOR_SPEED);
+    moveTo(FB_BASE_POS,5);
+    printState();
+  } else if ( command.equalsIgnoreCase("deact") ) {
+    deactivated = true;
+    EEPROM.put(deactAddress,true);
+    EEPROM.put(isUpAddress,STATE_DEACT);
+    state = STATE_DEACT;    
+    servo.write(90);    
+    printState();
+  }
+}
+
+
+// Handle STATE_UP
+void handleUpFeedback(String command) {
+   if ( motorUp ) {
+     // Do nothing if command motorUp received
+     motorUp = false;
+   } else if ( motorDown || (command.equalsIgnoreCase("_down_") ) ) {
+     motorDown = false; 
+     // Let the motor run downwards
+     counterclockwise(FB_TURNS*FB_UNITS,MOTOR_SPEED);
+     moveTo(FB_BASE_POS,5);
+     state = STATE_DOWN;
+     printState();
+     // Ignore all commands received in the mean time
+     motorUp = false;
+     motorDown = false;
+     motorStop = false;
+   }
+}
+
+// Handle STATE_DOWN
+void handleDownFeedback(String command) {
+   if ( motorDown ) {
+     motorDown = false;
+     // Do nothing
+   } else if ( motorUp  || (command.equalsIgnoreCase("_up_") )) {
+     motorUp = false; 
+     // Let the motor run upwards
+     clockwise(FB_TURNS*FB_UNITS,MOTOR_SPEED);
+     moveTo(FB_BASE_POS,5);
+     state = STATE_UP;
+     printState();
+     // Ignore all commands received in the mean time
+     motorUp = false;
+     motorDown = false;
+     motorStop = false;
+   }
+}
+
+// Handle STATE_RUNNING_UP
+void handleRunningUpFeedback() {
+  // In feedback mode this is ignored
+}
+
+
+// Handle STATE_RUNNING_DOWN
+void handleRunningDownFeedback() {
+  // In feedback mode this is ignored
+}
 
